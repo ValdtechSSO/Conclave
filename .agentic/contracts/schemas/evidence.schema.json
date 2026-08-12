@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["taskId", "revision", "check", "tool", "command", "exitCode"],
+  "properties": {
+    "taskId": { "type": "string" }, "revision": { "type": "string" }, "check": { "type": "string" },
+    "tool": { "type": "string" }, "toolVersion": { "type": ["string", "null"] }, "command": { "type": "string" },
+    "exitCode": { "type": "integer" }, "passed": { "type": ["integer", "null"] }, "failed": { "type": ["integer", "null"] },
+    "skipped": { "type": ["integer", "null"] }, "artifact": { "type": ["string", "null"] }
+  }
+}
+

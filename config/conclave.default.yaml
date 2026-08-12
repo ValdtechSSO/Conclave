@@ -1,0 +1,65 @@
+providers:
+  claude:
+    enabled: true
+    command: claude
+    promptTransport: stdin
+    timeoutSeconds: 900
+    proposal:
+      model: default
+    review:
+      model: default
+    synthesis:
+      model: default
+  codex:
+    enabled: true
+    command: codex
+    promptTransport: stdin
+    timeoutSeconds: 900
+    proposal:
+      model: default
+    review:
+      model: default
+    synthesis:
+      model: default
+  deepseek:
+    enabled: true
+    command: codewhale
+    promptTransport: argument
+    timeoutSeconds: 900
+    proposal:
+      model: default
+    review:
+      model: default
+    synthesis:
+      model: default
+conclave:
+  minimumProposalQuorum: 2
+  minimumReviewQuorum: 2
+synthesis:
+  fallback:
+    - provider: codex
+      model: default
+    - provider: claude
+      model: default
+    - provider: deepseek
+      model: default
+evidence:
+  unverifiablePolicy: annotate
+budget:
+  run:
+    maxTokens: 2000000
+    maxDurationMinutes: 30
+  provider:
+    maxTokens: 800000
+    maxDurationMinutes: 20
+    maxCalls: 4
+  abortOnExceeded: true
+retention:
+  keepRuns: 20
+  maxAgeDays: 30
+  keepWorkspaces: false
+retry:
+  rateLimitAttempts: 3
+  timeoutAttempts: 1
+  invalidStructuredOutputAttempts: 1
+  processCrashAttempts: 1

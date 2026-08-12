@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Conclave.Core/Conclave.Core.csproj" />
+    <ProjectReference Include="../Conclave.Infrastructure/Conclave.Infrastructure.csproj" />
+    <ProjectReference Include="../Conclave.Repository/Conclave.Repository.csproj" />
+    <ProjectReference Include="../Conclave.Providers/Conclave.Providers.csproj" />
+    <ProjectReference Include="../Conclave.Validation/Conclave.Validation.csproj" />
+  </ItemGroup>
+</Project>
+

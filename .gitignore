@@ -1,0 +1,14 @@
+.DS_Store
+bin/
+obj/
+.idea/
+.vscode/
+.conclave-input/
+TestResults/
+*.user
+.agentic/runtime/
+.agentic/generated/
+.dotnet-home/
+.packages/
+artifacts/
+.conclave.secrets.env

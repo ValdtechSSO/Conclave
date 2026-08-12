@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://conclave.local/schemas/proposal.schema.json",
+  "title": "Conclave proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "claims", "decisions", "implementationSteps", "risks", "alternatives", "openQuestions"],
+  "properties": {
+    "summary": { "type": "string", "minLength": 1 },
+    "claims": { "type": "array", "items": { "$ref": "#/$defs/claim" } },
+    "decisions": { "type": "array", "items": { "$ref": "#/$defs/decision" } },
+    "implementationSteps": { "type": "array", "items": { "$ref": "#/$defs/step" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "alternatives": { "type": "array", "items": { "type": "string" } },
+    "openQuestions": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object", "additionalProperties": false, "required": ["file", "kind"],
+      "properties": { "file": { "type": "string", "minLength": 1 }, "symbol": { "type": ["string", "null"] }, "kind": { "type": "string", "minLength": 1 } }
+    },
+    "claim": {
+      "type": "object", "additionalProperties": false, "required": ["id", "kind", "statement", "evidence"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["repository_fact", "architectural_reasoning", "assumption", "external_constraint"] },
+        "statement": { "type": "string", "minLength": 1 },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+      }
+    },
+    "decision": {
+      "type": "object", "additionalProperties": false, "required": ["id", "statement", "supportedBy"],
+      "properties": { "id": { "type": "string", "minLength": 1 }, "statement": { "type": "string", "minLength": 1 }, "supportedBy": { "type": "array", "items": { "type": "string" } } }
+    },
+    "target": {
+      "type": "object", "additionalProperties": false, "required": ["path", "operation"],
+      "properties": { "path": { "type": "string", "minLength": 1 }, "operation": { "enum": ["create", "modify", "delete", "rename", "move", "generated"] }, "destination": { "type": ["string", "null"] } }
+    },
+    "step": {
+      "type": "object", "additionalProperties": false, "required": ["id", "targets", "changes", "reason", "tests"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "targets": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/target" } },
+        "changes": { "type": "string", "minLength": 1 }, "reason": { "type": "string", "minLength": 1 }, "tests": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,10 @@
+states: [Created, Scoped, Implemented, TargetValidated, FullyValidated, EvidenceComplete, Reviewed, MergeReady]
+transitions:
+  Created: [Scoped]
+  Scoped: [Implemented]
+  Implemented: [TargetValidated]
+  TargetValidated: [FullyValidated]
+  FullyValidated: [EvidenceComplete]
+  EvidenceComplete: [Reviewed]
+  Reviewed: [MergeReady]
+

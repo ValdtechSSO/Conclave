@@ -1,0 +1,9 @@
+gates:
+  build: dotnet build Conclave.sln --no-restore
+  tests: dotnet test Conclave.sln --no-build --no-restore
+  architecture: ./tools/scripts/validate-architecture.sh
+completion:
+  require_zero_build_warnings: true
+  require_all_tests_pass: true
+  require_original_repository_integrity: true
+

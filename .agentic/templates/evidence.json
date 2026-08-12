@@ -1,0 +1,14 @@
+{
+  "taskId": "",
+  "revision": "",
+  "check": "",
+  "tool": "",
+  "toolVersion": null,
+  "command": "",
+  "exitCode": 0,
+  "passed": null,
+  "failed": null,
+  "skipped": null,
+  "artifact": null
+}
+

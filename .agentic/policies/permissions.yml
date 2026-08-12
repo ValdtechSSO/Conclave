@@ -1,0 +1,9 @@
+providers:
+  original_repository: deny
+  disposable_workspace: write
+  git_remote_mutation: deny
+  git_push: deny
+  network: provider-sandbox-policy
+publication:
+  validated_final_plan_only: true
+

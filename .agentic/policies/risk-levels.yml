@@ -1,0 +1,10 @@
+levels:
+  low:
+    required_gates: [build, targeted-tests]
+  medium:
+    required_gates: [build, targeted-tests, architecture]
+  high:
+    required_gates: [build, full-tests, architecture, integration]
+  critical:
+    required_gates: [build, full-tests, architecture, integration, security, human-review]
+

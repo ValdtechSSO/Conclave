@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://conclave.local/schemas/review.schema.json",
+  "title": "Conclave cross-review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "proposalAliases", "claims", "incorrectAssumptions", "architecturalViolations", "missingInvariants", "complexityConcerns", "migrationRisks", "compatibilityProblems", "concurrencyConcerns", "securityConcerns", "missingTests", "rolloutRisks", "strongestIdeas", "unresolvedDisagreements"],
+  "properties": {
+    "summary": { "type": "string", "minLength": 1 },
+    "proposalAliases": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "claims": { "type": "array", "items": { "$ref": "#/$defs/claim" } },
+    "incorrectAssumptions": { "$ref": "#/$defs/strings" }, "architecturalViolations": { "$ref": "#/$defs/strings" },
+    "missingInvariants": { "$ref": "#/$defs/strings" }, "complexityConcerns": { "$ref": "#/$defs/strings" },
+    "migrationRisks": { "$ref": "#/$defs/strings" }, "compatibilityProblems": { "$ref": "#/$defs/strings" },
+    "concurrencyConcerns": { "$ref": "#/$defs/strings" }, "securityConcerns": { "$ref": "#/$defs/strings" },
+    "missingTests": { "$ref": "#/$defs/strings" }, "rolloutRisks": { "$ref": "#/$defs/strings" },
+    "strongestIdeas": { "$ref": "#/$defs/strings" }, "unresolvedDisagreements": { "$ref": "#/$defs/strings" }
+  },
+  "$defs": {
+    "strings": { "type": "array", "items": { "type": "string" } },
+    "evidence": { "type": "object", "additionalProperties": false, "required": ["file", "kind"], "properties": { "file": { "type": "string", "minLength": 1 }, "symbol": { "type": ["string", "null"] }, "kind": { "type": "string" } } },
+    "claim": { "type": "object", "additionalProperties": false, "required": ["id", "kind", "statement", "evidence"], "properties": { "id": { "type": "string", "minLength": 1 }, "kind": { "enum": ["repository_fact", "architectural_reasoning", "assumption", "external_constraint"] }, "statement": { "type": "string", "minLength": 1 }, "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } } } }
+  }
+}
+

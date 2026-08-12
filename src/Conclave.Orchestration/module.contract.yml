@@ -1,0 +1,27 @@
+id: planning
+name: Planning
+purpose: >
+  Produces evidence-backed implementation plans through independent proposals,
+  anonymous cross-review, deterministic validation, and bounded synthesis.
+intent:
+  aliases:
+    - conclave plan
+    - implementation planning
+    - cross review
+    - synthesis
+ownership:
+  domain: evidence-backed-planning
+  authoritative_data:
+    - ConclaveRunArtifacts
+risk:
+  default: high
+  reasons:
+    - Executes external provider processes
+    - Creates retained Git snapshot references
+invariants:
+  - domain/contexts/planning.md#evidence-boundary
+  - domain/contexts/planning.md#review-independence
+  - domain/contexts/planning.md#publication-gate
+architecture_decisions:
+  - architecture/decisions/ADR-001-project-and-slice-architecture.md
+
