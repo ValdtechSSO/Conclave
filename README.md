@@ -14,7 +14,7 @@ dotnet test Conclave.sln
 From the root of a Conclave checkout:
 
 ```bash
-dotnet pack src/Conclave.Cli/Conclave.Cli.csproj --configuration Release
+dotnet pack src/Hosts/Cli/Conclave.Cli.csproj --configuration Release
 dotnet tool install --global --add-source ./artifacts/packages Conclave.Cli
 ```
 
@@ -300,7 +300,7 @@ cap:
 ```bash
 ./tools/scripts/smoke-test-live-providers.sh \
   smoke-001 \
-  "src/Conclave.Providers,tests/Conclave.Providers.Tests" \
+  "src/Modules/Planning/Infrastructure/Providers,tests/Integration/Planning/ProviderTests.cs" \
   /path/to/smoke-request.md
 ```
 

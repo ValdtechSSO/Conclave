@@ -1,6 +1,6 @@
 id: conclave
 purpose: evidence-backed implementation planning
-architecture: modular-project-boundaries-with-vertical-feature-slices
+architecture: compact-capability-modules-with-vertical-feature-slices
 required_commands:
   build: dotnet build Conclave.sln
   test: dotnet test Conclave.sln
@@ -9,4 +9,3 @@ authoritative_documents:
   - architecture/system-overview.md
   - domain/global-invariants.md
   - docs/implementation-plans/conclave-implementation-plan.md
-

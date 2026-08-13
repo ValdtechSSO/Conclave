@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Conclave.Planning</AssemblyName>
+    <RootNamespace>Conclave.Planning</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Infrastructure/**/*.cs" />
+  </ItemGroup>
+</Project>

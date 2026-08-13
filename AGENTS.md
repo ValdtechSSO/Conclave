@@ -7,14 +7,15 @@ Conclave produces implementation plans by orchestrating independent model provid
 ## Start here
 
 - Read `architecture/system-overview.md` and `domain/global-invariants.md`.
-- Application behavior starts under `Features/{UseCase}`.
-- Provider, Git, process, and filesystem details stay behind their project abstractions.
+- Application behavior starts under `src/Modules/{Module}/Features/{UseCase}`.
+- Read the owning module's `module.contract.yml` and `AGENTS.md` before changing it.
+- Provider, Git, process, and filesystem details stay in the module's local infrastructure behind its ports.
 
 ## Authoritative commands
 
 - Build: `dotnet build Conclave.sln`
 - Test: `dotnet test Conclave.sln`
-- CLI: `dotnet run --project src/Conclave.Cli -- --help`
+- CLI: `dotnet run --project src/Hosts/Cli -- --help`
 - Architecture check: `./tools/scripts/validate-architecture.sh`
 - Run all .NET build, test, and pack commands outside the filesystem sandbox;
   MSBuild and VSTest require local IPC that is unreliable inside it.
@@ -45,6 +46,8 @@ Conclave produces implementation plans by orchestrating independent model provid
   events. Never expose, reconstruct, or invent private model reasoning.
 - Provider phases must never invoke Conclave recursively, call another provider,
   or delegate to a subagent.
+- Do not add empty template directories, speculative abstractions, technical
+  modules, or assemblies without an enforced current boundary.
 - Automated tests use fake providers and must never consume provider APIs. Any
   explicitly authorized live-provider smoke test uses only Codex
   `gpt-5.6-terra` and DeepSeek `deepseek-v4-flash`; never invoke Claude for a
@@ -53,9 +56,9 @@ Conclave produces implementation plans by orchestrating independent model provid
 
 ## Map
 
-- `src/`: product projects
-- `tests/`: tests mirroring product responsibilities
-- `src/Conclave.Orchestration/Features/Plan/`: planning behavior with its authoritative schemas and stage prompts
+- `src/Modules/Planning/`: planning module, semantic contract, feature slices, and local infrastructure
+- `src/Hosts/Cli/`: console transport and composition root
+- `tests/{Unit,Integration,EndToEnd}/`: tests organized by type, then module or host
 - `architecture/`, `domain/`: human-maintained decisions and invariants
 - `.agentic/`: policies, workflows, templates, and generated/runtime placeholders
 

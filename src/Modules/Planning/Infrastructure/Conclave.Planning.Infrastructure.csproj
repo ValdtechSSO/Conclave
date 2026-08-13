@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Conclave.Planning.Infrastructure</AssemblyName>
+    <RootNamespace>Conclave.Planning.Infrastructure</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Conclave.Planning.csproj" />
+  </ItemGroup>
+</Project>

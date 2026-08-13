@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>conclave</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>conclave</ToolCommandName>
+    <PackageId>Conclave.Cli</PackageId>
+    <Version>2.3.5</Version>
+    <Description>Evidence-backed multi-model implementation planning CLI.</Description>
+    <PackageOutputPath>../../../artifacts/packages</PackageOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/Planning/Conclave.Planning.csproj" />
+    <ProjectReference Include="../../Modules/Planning/Infrastructure/Conclave.Planning.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../Modules/Planning/Features/CreatePlan/Schemas/*.json" Link="Modules/Planning/Features/CreatePlan/Schemas/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../Modules/Planning/Features/CreatePlan/Prompts/*.md" Link="Modules/Planning/Features/CreatePlan/Prompts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../Modules/Planning/Infrastructure/Configuration/conclave.default.yaml" Link="Modules/Planning/Infrastructure/Configuration/conclave.default.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../Modules/Planning/Infrastructure/Configuration/deepseek-models.json" Link="Modules/Planning/Infrastructure/Configuration/deepseek-models.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,10 +1,10 @@
 # System overview
 
-Conclave is a local .NET CLI with stable commands (`plan`, `show`, `doctor`, `prune`). The CLI delegates application behavior to feature slices in orchestration. Core contains contracts only; adapters isolate provider-specific behavior; repository services own Git snapshots and worktrees; validation owns deterministic gates; infrastructure owns processes, persistence, configuration, budgets, and retention.
+Conclave is a local .NET CLI with stable commands (`plan`, `show`, `doctor`, `prune`). The CLI host delegates application behavior to vertical slices in the `Planning` capability module. The module owns planning-run contracts and behavior; its local infrastructure owns provider adapters, Git snapshots and worktrees, processes, persistence, and configuration.
 
-The project split follows the implementation plan. Inside each project, new behavior remains feature-first. Dependencies point inward toward `Conclave.Core`; provider, Git, filesystem, and process details do not enter Core.
+Application behavior starts under `src/Modules/Planning/Features/{UseCase}`. `Conclave.Planning` does not depend on infrastructure or the host. `Conclave.Planning.Infrastructure` implements module ports, and `src/Hosts/Cli` is the composition root. Directories and assemblies exist only for current behavior or an enforced boundary; technical categories do not become product modules.
 
-The JSON files under `src/Conclave.Orchestration/Features/Plan/Schemas/` remain authoritative and are colocated with the planning feature that owns them. Provider adapters may derive an invocation-only representation for a provider's supported JSON Schema dialect (for example, Claude's draft-agnostic form or OpenAI's all-properties-required strict form), but validation always uses the unchanged authoritative schema.
+The JSON files under `src/Modules/Planning/Features/CreatePlan/Schemas/` remain authoritative and are colocated with the planning feature that owns them. Provider adapters may derive an invocation-only representation for a provider's supported JSON Schema dialect (for example, Claude's draft-agnostic form or OpenAI's all-properties-required strict form), but validation always uses the unchanged authoritative schema.
 
 Before provider execution, the repository layer validates a set of recommended repository-relative starting paths against the retained snapshot. Conclave sends only those paths, never the files' contents, in the prompt. Providers use read-only tools inside their isolated worktrees, begin at the recommended paths, and may follow direct dependencies, consumers, contracts, tests, or concrete evidence gaps elsewhere in the snapshot. They must keep exploration focused and cannot mutate files, Git state, or remotes.
 

@@ -119,7 +119,39 @@ Features/
 Infrastructure/
 ```
 
-## 2.5 Los contratos manuales no duplican el código
+## 2.5 Economía estructural
+
+La estructura se crea bajo demanda. Un árbol más grande no es más fiel a esta
+arquitectura por el mero hecho de reproducir todas las carpetas de referencia.
+
+Regla normativa:
+
+> **Every module, project, directory, abstraction, and shared component MUST be
+> justified by current code or by an enforced boundary. Hypothetical future use
+> is not sufficient.**
+
+Por tanto:
+
+- no se crean carpetas vacías para completar una plantilla;
+- varias clases pequeñas y cohesivas pueden compartir archivo cuando se localizan,
+  cambian y se revisan juntas;
+- una clase obtiene archivo propio cuando tiene responsabilidad, navegación o
+  evolución independiente, no por una regla mecánica;
+- un proyecto o assembly existe solo cuando impone un límite verificable de
+  dependencias, despliegue, ownership, lenguaje o runtime;
+- los módulos representan capacidades funcionales, nunca categorías técnicas
+  como `Git`, `Providers`, `Repositories` o `Validation`;
+- una capacidad no se divide en varios módulos hasta que las partes tengan
+  vocabulario, ownership, contratos o ciclo de vida realmente independientes;
+- `BuildingBlocks`, `Shared` y abstracciones comunes aparecen únicamente cuando
+  dos o más consumidores actuales justifican la promoción y el ownership queda
+  explícito.
+
+Las carpetas mostradas en los árboles canónicos son posibilidades permitidas,
+no una lista de placeholders obligatorios. La estructura mínima que explica y
+protege el sistema es preferible a una jerarquía exhaustiva sin contenido.
+
+## 2.6 Los contratos manuales no duplican el código
 
 Un contrato manual describe únicamente información no derivable con fiabilidad:
 
@@ -144,7 +176,7 @@ No debe contener:
 
 Esa información se genera desde el código.
 
-## 2.6 El contexto se recupera progresivamente
+## 2.7 El contexto se recupera progresivamente
 
 El agente comienza con contexto mínimo y solicita más información conforme entiende el problema.
 
@@ -160,7 +192,7 @@ Minimal bootstrap
 → Implement
 ```
 
-## 2.7 Sin evidencia no hay completitud
+## 2.8 Sin evidencia no hay completitud
 
 Una tarea no está completa porque el agente lo afirme.
 
@@ -174,7 +206,7 @@ La completitud se deriva de:
 - evidencia ligada al commit;
 - aprobación cuando corresponda.
 
-## 2.8 La propuesta debe ser falsable
+## 2.9 La propuesta debe ser falsable
 
 La estructura incluye datasets, graders y resultados de evaluación para comparar:
 
@@ -1224,6 +1256,10 @@ repository/
     ├── generated/index/
     └── runtime/
 ```
+
+Este árbol se materializa solo hasta el nivel necesario. Por ejemplo, un módulo
+sin reglas de dominio propias no crea `Domain/`, y un repositorio con un único
+módulo no crea `BuildingBlocks/` ni `Shared/` preventivamente.
 
 ---
 

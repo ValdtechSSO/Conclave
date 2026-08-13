@@ -242,34 +242,32 @@ This allows Conclave to evolve independently from the applications that use it.
 conclave/
 │
 ├── src/
-│   ├── Conclave.Cli/
-│   ├── Conclave.Core/
-│   ├── Conclave.Orchestration/
-│   │   └── Features/
-│   │       └── Plan/
-│   │           ├── Schemas/
-│   │           │   ├── proposal.schema.json
-│   │           │   ├── review.schema.json
-│   │           │   └── final-plan.schema.json
-│   │           └── Prompts/
-│   │               ├── proposal.md
-│   │               ├── review.md
-│   │               └── synthesis.md
-│   ├── Conclave.Providers/
-│   ├── Conclave.Repository/
-│   ├── Conclave.Validation/
-│   └── Conclave.Infrastructure/
+│   ├── Modules/
+│   │   └── Planning/
+│   │       ├── AGENTS.md
+│   │       ├── module.contract.yml
+│   │       ├── Contracts/
+│   │       ├── Features/
+│   │       │   ├── CreatePlan/
+│   │       │   │   ├── Prompts/
+│   │       │   │   ├── Schemas/
+│   │       │   │   └── Validation/
+│   │       │   ├── ShowRun/
+│   │       │   ├── DiagnoseEnvironment/
+│   │       │   └── PruneRuns/
+│   │       └── Infrastructure/
+│   │           ├── Configuration/
+│   │           ├── Git/
+│   │           ├── Persistence/
+│   │           ├── Processes/
+│   │           └── Providers/
+│   └── Hosts/
+│       └── Cli/
 │
 ├── tests/
-│   ├── Conclave.Core.Tests/
-│   ├── Conclave.Orchestration.Tests/
-│   ├── Conclave.Providers.Tests/
-│   ├── Conclave.Repository.Tests/
-│   ├── Conclave.Validation.Tests/
-│   └── Conclave.IntegrationTests/
-│
-├── config/
-│   └── conclave.default.yaml
+│   ├── Unit/Planning/
+│   ├── Integration/Planning/
+│   └── EndToEnd/Cli/
 │
 ├── AGENTS.md
 ├── README.md
@@ -278,7 +276,30 @@ conclave/
 
 ## Responsibilities
 
-### Conclave.Cli
+Only directories backed by current code or an enforced boundary are created.
+The reference architecture is not materialized as a set of empty placeholders.
+
+### Planning module
+
+`src/Modules/Planning` owns planning-run vocabulary, contracts, behavior, and
+technical implementations. Application behavior starts in one of its explicit
+feature slices:
+
+- `CreatePlan` coordinates snapshot, proposal, validation, cross-review,
+  synthesis, final validation, and rendering;
+- `ShowRun` reads retained run results, plans, and progress;
+- `DiagnoseEnvironment` checks provider and repository prerequisites;
+- `PruneRuns` applies retention and snapshot cleanup.
+
+The module uses two assemblies. `Conclave.Planning` contains contracts and
+features and does not reference infrastructure. `Conclave.Planning.Infrastructure`
+implements provider, Git, process, persistence, and configuration ports.
+
+Technical categories do not become modules, and another assembly is added only
+when it enforces a current dependency, deployment, ownership, language, or
+runtime boundary.
+
+### CLI host
 
 Responsible for:
 
@@ -286,91 +307,11 @@ Responsible for:
 plan
 show
 doctor
+prune
 ```
 
-and human/machine-readable output.
-
-### Conclave.Core
-
-Contains only domain contracts and shared models.
-
-It must not depend directly on:
-
-- process execution;
-- Git;
-- filesystem implementation;
-- Claude;
-- Codex;
-- DeepSeek.
-
-### Conclave.Providers
-
-Contains provider-specific adapters:
-
-```text
-ClaudeCliAdapter
-CodexCliAdapter
-DeepSeekCliAdapter
-```
-
-Each adapter knows:
-
-- command syntax;
-- structured-output capabilities;
-- prompt transport;
-- sandbox options;
-- usage extraction;
-- authentication checks;
-- provider-specific failure classification.
-
-### Conclave.Repository
-
-Responsible for:
-
-- repository inspection;
-- immutable snapshots;
-- disposable provider workspaces;
-- snapshot metadata;
-- workspace reset/cleanup;
-- Git-specific operations.
-
-### Conclave.Validation
-
-Responsible for deterministic validation:
-
-- JSON schema validation;
-- evidence validation;
-- final-plan validation;
-- structural gates.
-
-### Conclave.Orchestration
-
-Coordinates:
-
-```text
-snapshot
-proposal
-validation
-cross-review
-validation
-synthesis
-final validation
-render
-```
-
-### Conclave.Infrastructure
-
-Responsible for:
-
-- process execution;
-- artifact persistence;
-- configuration;
-- logging;
-- retry policies;
-- timers;
-- usage/cost aggregation;
-- run/provider budget enforcement;
-- retention and prune operations.
+and console argument parsing, module composition, progress presentation, and
+human/machine-readable output. It does not own application behavior.
 
 ---
 
