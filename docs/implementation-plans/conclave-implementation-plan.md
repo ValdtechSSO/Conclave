@@ -245,6 +245,16 @@ conclave/
 │   ├── Conclave.Cli/
 │   ├── Conclave.Core/
 │   ├── Conclave.Orchestration/
+│   │   └── Features/
+│   │       └── Plan/
+│   │           ├── Schemas/
+│   │           │   ├── proposal.schema.json
+│   │           │   ├── review.schema.json
+│   │           │   └── final-plan.schema.json
+│   │           └── Prompts/
+│   │               ├── proposal.md
+│   │               ├── review.md
+│   │               └── synthesis.md
 │   ├── Conclave.Providers/
 │   ├── Conclave.Repository/
 │   ├── Conclave.Validation/
@@ -257,16 +267,6 @@ conclave/
 │   ├── Conclave.Repository.Tests/
 │   ├── Conclave.Validation.Tests/
 │   └── Conclave.IntegrationTests/
-│
-├── schemas/
-│   ├── proposal.schema.json
-│   ├── review.schema.json
-│   └── final-plan.schema.json
-│
-├── prompts/
-│   ├── proposal.md
-│   ├── review.md
-│   └── synthesis.md
 │
 ├── config/
 │   └── conclave.default.yaml
@@ -3048,28 +3048,11 @@ A real prune must delete only the selected runs and their corresponding snapshot
 
 ---
 
-# 51. Integration test repository
+# 51. Integration test repositories
 
-Create:
-
-```text
-fixtures/sample-app/
-```
-
-with:
-
-```text
-AGENTS.md
-src/
-tests/
-docs/
-```
-
-Example feature:
-
-```text
-Add soft deletion to Customer.
-```
+Integration tests create disposable Git repositories under the system temporary
+directory. Test setup owns the minimal repository content required by each
+scenario; the source tree does not retain a shared sample repository fixture.
 
 Integration tests should verify the workflow rather than attempt to mathematically prove architectural quality.
 

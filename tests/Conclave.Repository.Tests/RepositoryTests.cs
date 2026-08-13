@@ -57,6 +57,26 @@ public sealed class RepositoryTests : IAsyncLifetime
         await repository.DeleteSnapshotRefAsync(_root, snapshot.SnapshotRef, CancellationToken.None);
     }
 
+    [Fact]
+    public async Task Search_guide_validates_suggested_roots_without_reading_file_contents()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "src", "List"));
+        Directory.CreateDirectory(Path.Combine(_root, "src", "Other"));
+        await File.WriteAllTextAsync(Path.Combine(_root, "src", "List", "A.cs"), "class A { }\n");
+        await File.WriteAllTextAsync(Path.Combine(_root, "src", "List", "B.cs"), new string('b', 50));
+        await File.WriteAllTextAsync(Path.Combine(_root, "src", "Other", "Hidden.cs"), "class Hidden { }\n");
+        await Git("add", "src");
+        await Git("-c", "user.name=Test", "-c", "user.email=test@local.invalid", "commit", "-m", "context fixture");
+        var repository = new GitRepositoryService(_process);
+        var snapshot = await repository.CreateAsync(_root, Guid.NewGuid().ToString("N"), SnapshotMode.Head, CancellationToken.None);
+
+        var guide = await repository.BuildAsync(snapshot, ["src/List"], new RepositorySearchConfiguration { MaxSuggestedRoots = 2 }, CancellationToken.None);
+
+        Assert.Equal(["src/List"], guide.SuggestedRoots);
+        Assert.Equal(2, guide.MatchingFileCount);
+        await repository.DeleteSnapshotRefAsync(_root, snapshot.SnapshotRef, CancellationToken.None);
+    }
+
     private async Task Git(params string[] arguments)
     {
         var result = await GitAt(_root, arguments);
@@ -65,4 +85,3 @@ public sealed class RepositoryTests : IAsyncLifetime
 
     private Task<ProcessResult> GitAt(string path, params string[] arguments) => _process.RunAsync(new ProcessRequest("git", arguments, path), CancellationToken.None);
 }
-

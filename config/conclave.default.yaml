@@ -3,63 +3,85 @@ providers:
     enabled: true
     command: claude
     promptTransport: stdin
-    timeoutSeconds: 900
+    timeoutSeconds: 360
+    maxCostUsd: 0.25
+    budget:
+      maxTokens: 1000000
+      maxDurationMinutes: 15
+      maxCalls: 3
+      maxCostUsd: 0.25
     proposal:
-      model: default
+      model: sonnet
     review:
-      model: default
+      model: sonnet
     synthesis:
-      model: default
+      model: sonnet
   codex:
     enabled: true
     command: codex
     promptTransport: stdin
-    timeoutSeconds: 900
+    timeoutSeconds: 360
+    maxCostUsd: 0.25
+    budget:
+      maxTokens: 1000000
+      maxDurationMinutes: 15
+      maxCalls: 3
+      maxCostUsd: 0.25
     proposal:
-      model: default
+      model: gpt-5.6-sol
     review:
-      model: default
+      model: gpt-5.6-sol
     synthesis:
-      model: default
+      model: gpt-5.6-sol
   deepseek:
     enabled: true
-    command: codewhale
-    promptTransport: argument
-    timeoutSeconds: 900
+    command: codex
+    promptTransport: stdin
+    timeoutSeconds: 600
+    maxCostUsd: 0.25
+    budget:
+      maxTokens: 4000000
+      maxDurationMinutes: 30
+      maxCalls: 3
+      maxCostUsd: 0.25
     proposal:
-      model: default
+      model: deepseek-v4-flash
     review:
-      model: default
+      model: deepseek-v4-flash
     synthesis:
-      model: default
+      model: deepseek-v4-flash
 conclave:
   minimumProposalQuorum: 2
   minimumReviewQuorum: 2
 synthesis:
   fallback:
     - provider: codex
-      model: default
+      model: gpt-5.6-sol
     - provider: claude
-      model: default
+      model: sonnet
     - provider: deepseek
-      model: default
+      model: deepseek-v4-flash
 evidence:
   unverifiablePolicy: annotate
 budget:
   run:
-    maxTokens: 2000000
-    maxDurationMinutes: 30
+    maxDurationMinutes: 45
+    maxCalls: 7
+    maxCostUsd: 0.50
   provider:
-    maxTokens: 800000
-    maxDurationMinutes: 20
-    maxCalls: 4
+    maxTokens: 1000000
+    maxDurationMinutes: 5
+    maxCalls: 3
+    maxCostUsd: 0.25
   abortOnExceeded: true
 retention:
   keepRuns: 20
   maxAgeDays: 30
   keepWorkspaces: false
 retry:
-  rateLimitAttempts: 3
-  timeoutAttempts: 1
-  invalidStructuredOutputAttempts: 1
-  processCrashAttempts: 1
+  rateLimitAttempts: 0
+  timeoutAttempts: 0
+  invalidStructuredOutputAttempts: 0
+  processCrashAttempts: 0
+search:
+  maxSuggestedRoots: 20

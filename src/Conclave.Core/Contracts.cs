@@ -5,8 +5,9 @@ namespace Conclave.Core;
 
 public enum SnapshotMode { Head, WorkingTree }
 public enum ConclaveStage { Proposal, Review, Synthesis }
-public enum ProviderFailureKind { None, Timeout, RateLimit, Authentication, ProcessCrash, InvalidStructuredOutput, ContextLimit, Cancelled, Unknown }
+public enum ProviderFailureKind { None, Timeout, RateLimit, Authentication, Billing, ProcessCrash, InvalidStructuredOutput, ContextLimit, Cancelled, Unknown }
 public enum PromptTransport { Stdin, TemporaryFile, Argument }
+public enum JsonSchemaDialect { Authoritative, DraftAgnostic, OpenAiStrict }
 public enum ClaimKind { RepositoryFact, ArchitecturalReasoning, Assumption, ExternalConstraint }
 public enum EvidenceStatus { Verified, Unverified, Invalid, NotDeterministicallyVerifiable }
 public enum TargetOperation { Create, Modify, Delete, Rename, Move, Generated }
@@ -39,7 +40,9 @@ public sealed record ConclaveRequest(
     IReadOnlyList<string>? Providers = null,
     bool KeepWorkspaces = false,
     UnverifiablePolicy? EvidencePolicy = null,
-    bool DevelopmentMode = false);
+    bool DevelopmentMode = false,
+    IReadOnlyList<string>? Scope = null,
+    bool WholeRepository = false);
 
 public sealed record ParticipantIdentity(string ProviderId, string ModelId);
 
@@ -71,7 +74,10 @@ public sealed record ModelRequest(
     string WorkingDirectory,
     string OutputSchemaPath,
     ParticipantIdentity Participant,
-    bool IsRepair = false);
+    bool IsRepair = false,
+    [property: JsonIgnore] Action<ProviderActivity>? Activity = null);
+
+public sealed record ProviderActivity(string Code, string Message);
 
 public sealed record ModelExecutionResult(
     ParticipantIdentity Participant,
@@ -91,7 +97,12 @@ public sealed record ProcessRequest(
     string? StandardInput = null,
     IReadOnlyDictionary<string, string?>? Environment = null,
     TimeSpan? Timeout = null,
-    int MaxOutputCharacters = 4_000_000);
+    int MaxOutputCharacters = 4_000_000,
+    [property: JsonIgnore] Action<ProcessActivity>? Activity = null);
+
+public enum ProcessActivityKind { Started, InputDelivered, StandardOutput, StandardError, Exited }
+
+public sealed record ProcessActivity(ProcessActivityKind Kind, string? Data = null);
 
 public sealed record ProcessResult(
     int ExitCode,
@@ -175,6 +186,18 @@ public sealed class ReviewArtifact : IConclaveArtifact
     public List<string> UnresolvedDisagreements { get; set; } = [];
 }
 
+public sealed class DisagreementCatalogEntry
+{
+    public string Id { get; set; } = "";
+    public string Statement { get; set; } = "";
+}
+
+public sealed class CouncilDisagreement
+{
+    public List<string> SourceIds { get; set; } = [];
+    public string Summary { get; set; } = "";
+}
+
 public sealed class FinalPlanArtifact : IConclaveArtifact
 {
     public string Goal { get; set; } = "";
@@ -192,7 +215,7 @@ public sealed class FinalPlanArtifact : IConclaveArtifact
     public List<string> Security { get; set; } = [];
     public List<string> Risks { get; set; } = [];
     public List<string> RejectedAlternatives { get; set; } = [];
-    public List<string> CouncilDisagreements { get; set; } = [];
+    public List<CouncilDisagreement> CouncilDisagreements { get; set; } = [];
     public List<string> OpenQuestions { get; set; } = [];
     public List<Claim> Claims { get; set; } = [];
 }
@@ -242,10 +265,13 @@ public sealed class ProviderConfiguration
     public bool Enabled { get; set; } = true;
     public string Command { get; set; } = "";
     public PromptTransport PromptTransport { get; set; } = PromptTransport.Stdin;
-    public int TimeoutSeconds { get; set; } = 900;
+    public JsonSchemaDialect JsonSchemaDialect { get; set; } = JsonSchemaDialect.Authoritative;
+    public int TimeoutSeconds { get; set; } = 360;
+    public decimal MaxCostUsd { get; set; } = 0.25m;
     public List<string> ProbeArguments { get; set; } = ["--version"];
     public List<string> ProbeFailurePatterns { get; set; } = [];
     public string? CredentialEnvironmentVariable { get; set; }
+    public bool CredentialRequired { get; set; }
     [JsonIgnore]
     public string? CredentialValue { get; set; }
     public bool SupportsSchemaConstrainedOutput { get; set; }
@@ -267,17 +293,30 @@ public sealed class ProviderConfiguration
 
 public sealed class BudgetLimit
 {
-    public long MaxTokens { get; set; } = 2_000_000;
-    public int MaxDurationMinutes { get; set; } = 30;
+    public long MaxTokens { get; set; } = 1_000_000;
+    public int MaxDurationMinutes { get; set; } = 10;
     public int MaxCalls { get; set; } = int.MaxValue;
+    public decimal MaxCostUsd { get; set; } = 0.50m;
+}
+
+public sealed class RunBudgetLimit
+{
+    public int MaxDurationMinutes { get; set; } = 45;
+    public int MaxCalls { get; set; } = int.MaxValue;
+    public decimal MaxCostUsd { get; set; } = 0.50m;
 }
 
 public sealed class RetryConfiguration
 {
-    public int RateLimitAttempts { get; set; } = 3;
-    public int TimeoutAttempts { get; set; } = 1;
-    public int InvalidStructuredOutputAttempts { get; set; } = 1;
-    public int ProcessCrashAttempts { get; set; } = 1;
+    public int RateLimitAttempts { get; set; }
+    public int TimeoutAttempts { get; set; }
+    public int InvalidStructuredOutputAttempts { get; set; }
+    public int ProcessCrashAttempts { get; set; }
+}
+
+public sealed class RepositorySearchConfiguration
+{
+    public int MaxSuggestedRoots { get; set; } = 20;
 }
 
 public sealed class RetentionConfiguration
@@ -301,12 +340,17 @@ public sealed class ConclaveConfiguration
     public int MinimumReviewQuorum { get; set; } = 2;
     public List<SynthesisParticipant> SynthesisFallback { get; set; } = [];
     public UnverifiablePolicy EvidencePolicy { get; set; } = UnverifiablePolicy.Annotate;
-    public BudgetLimit RunBudget { get; set; } = new();
-    public BudgetLimit ProviderBudget { get; set; } = new() { MaxTokens = 800_000, MaxDurationMinutes = 20, MaxCalls = 4 };
+    public RunBudgetLimit RunBudget { get; set; } = new() { MaxCalls = 7 };
+    public BudgetLimit ProviderBudget { get; set; } = new() { MaxTokens = 1_000_000, MaxDurationMinutes = 5, MaxCalls = 3, MaxCostUsd = 0.25m };
     public bool AbortOnBudgetExceeded { get; set; } = true;
     public RetentionConfiguration Retention { get; set; } = new();
     public RetryConfiguration Retry { get; set; } = new();
+    public RepositorySearchConfiguration Search { get; set; } = new();
 }
+
+public sealed record RepositorySearchGuide(
+    IReadOnlyList<string> SuggestedRoots,
+    int MatchingFileCount);
 
 public sealed class StageRecord
 {
@@ -347,6 +391,30 @@ public sealed record BudgetDecision(bool Allowed, ConclaveExitCode ExitCode = Co
 {
     public static BudgetDecision Allow() => new(true);
     public static BudgetDecision Deny(ConclaveExitCode code, string reason) => new(false, code, reason);
+}
+
+public enum ConclaveProgressStatus
+{
+    Started,
+    Running,
+    Retrying,
+    Succeeded,
+    Failed
+}
+
+public sealed record ConclaveProgressUpdate(
+    DateTimeOffset Timestamp,
+    string RunId,
+    string Phase,
+    ConclaveProgressStatus Status,
+    string Message,
+    string? Provider = null,
+    double? ElapsedSeconds = null,
+    string? ActivityCode = null);
+
+public interface IConclaveProgressSink
+{
+    void Report(ConclaveProgressUpdate update);
 }
 
 public static class ConclaveJson
@@ -401,11 +469,16 @@ public interface IRepositoryContentReader
     Task<(bool Exists, string? Content)> ReadTextAsync(RepositorySnapshot snapshot, string repositoryRelativePath, CancellationToken cancellationToken);
 }
 
+public interface IRepositorySearchGuideBuilder
+{
+    Task<RepositorySearchGuide> BuildAsync(RepositorySnapshot snapshot, IReadOnlyList<string> suggestedRoots, RepositorySearchConfiguration limits, CancellationToken cancellationToken);
+}
+
 public interface IArtifactValidator
 {
     ValidationResult ValidateProposal(ProposalArtifact artifact);
     ValidationResult ValidateReview(ReviewArtifact artifact);
-    ValidationResult ValidateFinalPlan(FinalPlanArtifact artifact);
+    ValidationResult ValidateFinalPlan(FinalPlanArtifact artifact, IReadOnlyCollection<string>? requiredDisagreementIds = null);
 }
 
 public interface IEvidenceValidator

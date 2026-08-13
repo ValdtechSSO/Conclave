@@ -1,31 +1,90 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Conclave.Core;
 using Conclave.Repository;
 
 namespace Conclave.Validation;
 
+public sealed record ArtifactParseResult<T>(T? Artifact, string? Error, string? RepairedJson = null, string? RepairDescription = null) where T : class;
+
 public sealed class ArtifactParser
 {
-    public (T? Artifact, string? Error) Parse<T>(string? content, string? schemaPath = null) where T : class
+    public ArtifactParseResult<T> Parse<T>(string? content, string? schemaPath = null) where T : class
     {
-        if (string.IsNullOrWhiteSpace(content)) return (null, "Provider returned no structured output.");
+        if (string.IsNullOrWhiteSpace(content)) return new(null, "Provider returned no structured output.");
         string? schemaError = null;
-        foreach (var candidate in Candidates(content))
+        var candidates = Candidates(content).Distinct(StringComparer.Ordinal).ToArray();
+        foreach (var candidate in candidates)
         {
-            try
-            {
-                if (schemaPath is not null)
-                {
-                    var schemaValidation = JsonSchemaSubsetValidator.Validate(candidate, schemaPath);
-                    if (!schemaValidation.Valid) { schemaError = schemaValidation.Error; continue; }
-                }
-                var result = JsonSerializer.Deserialize<T>(candidate, ConclaveJson.Options);
-                if (result is not null) return (result, null);
-            }
-            catch (JsonException) { }
+            var parsed = ParseCandidate<T>(candidate, schemaPath);
+            if (parsed.Artifact is not null) return parsed;
+            schemaError ??= parsed.Error;
         }
-        return (null, schemaError ?? "Provider output does not contain a valid artifact matching the required JSON contract.");
+
+        foreach (var candidate in candidates)
+        {
+            if (!TryInsertMissingLineCommas(candidate, out var repaired, out var insertions)) continue;
+            var parsed = ParseCandidate<T>(repaired, schemaPath);
+            if (parsed.Artifact is not null)
+                return new(parsed.Artifact, null, repaired, $"inserted {insertions} missing JSON comma{(insertions == 1 ? "" : "s")}");
+            schemaError ??= parsed.Error;
+        }
+
+        return new(null, schemaError ?? "Provider output does not contain a valid artifact matching the required JSON contract.");
+    }
+
+    private static ArtifactParseResult<T> ParseCandidate<T>(string candidate, string? schemaPath) where T : class
+    {
+        try
+        {
+            if (schemaPath is not null)
+            {
+                var schemaValidation = JsonSchemaSubsetValidator.Validate(candidate, schemaPath);
+                if (!schemaValidation.Valid) return new(null, schemaValidation.Error);
+            }
+            var result = JsonSerializer.Deserialize<T>(candidate, ConclaveJson.Options);
+            return result is null ? new(null, "JSON deserialized to null.") : new(result, null);
+        }
+        catch (JsonException exception) { return new(null, exception.Message); }
+    }
+
+    private static bool TryInsertMissingLineCommas(string candidate, out string repaired, out int insertions)
+    {
+        var lines = candidate.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        insertions = 0;
+        for (var index = 0; index + 1 < lines.Length; index++)
+        {
+            var current = lines[index].TrimEnd();
+            var next = lines[index + 1].TrimStart();
+            if (!EndsWithCompleteJsonValue(current) || !StartsWithJsonValue(next)) continue;
+            lines[index] = current + ",";
+            insertions++;
+        }
+        repaired = string.Join('\n', lines);
+        return insertions > 0;
+    }
+
+    private static bool EndsWithCompleteJsonValue(string line)
+    {
+        if (line.Length == 0) return false;
+        var last = line[^1];
+        if (last == '"')
+        {
+            var backslashes = 0;
+            for (var index = line.Length - 2; index >= 0 && line[index] == '\\'; index--) backslashes++;
+            return backslashes % 2 == 0;
+        }
+        if (last is '}' or ']' || char.IsDigit(last)) return true;
+        return line.EndsWith("true", StringComparison.Ordinal) || line.EndsWith("false", StringComparison.Ordinal) || line.EndsWith("null", StringComparison.Ordinal);
+    }
+
+    private static bool StartsWithJsonValue(string line)
+    {
+        if (line.Length == 0) return false;
+        var first = line[0];
+        return first is '"' or '{' or '[' or '-' || char.IsDigit(first) ||
+            line.StartsWith("true", StringComparison.Ordinal) || line.StartsWith("false", StringComparison.Ordinal) || line.StartsWith("null", StringComparison.Ordinal);
     }
 
     private static IEnumerable<string> Candidates(string content)
@@ -149,7 +208,7 @@ public sealed class ArtifactValidator : IArtifactValidator
         return result;
     }
 
-    public ValidationResult ValidateFinalPlan(FinalPlanArtifact artifact)
+    public ValidationResult ValidateFinalPlan(FinalPlanArtifact artifact, IReadOnlyCollection<string>? requiredDisagreementIds = null)
     {
         var result = new ValidationResult();
         Required(result, artifact.Goal, "finalPlan.goal");
@@ -159,8 +218,48 @@ public sealed class ArtifactValidator : IArtifactValidator
         if (artifact.ImplementationSteps.Count == 0) Invalid(result, "PLAN_STEPS_REQUIRED", "Final plan requires at least one implementation step.", "finalPlan.implementationSteps");
         foreach (var assumption in artifact.Claims.Where(x => x.Kind == ClaimKind.Assumption))
             if (!artifact.OpenQuestions.Contains(assumption.Statement, StringComparer.Ordinal))
-                Invalid(result, "ASSUMPTION_NOT_SURFACED", $"Assumption '{assumption.Id}' must remain visible as an open question.", $"claim[{assumption.Id}]");
+            {
+                artifact.OpenQuestions.Add(assumption.Statement);
+                Warning(result, "ASSUMPTION_SURFACED", $"Assumption '{assumption.Id}' was copied to open questions locally.", $"claim[{assumption.Id}]");
+            }
+        ValidateDisagreements(result, artifact.CouncilDisagreements, requiredDisagreementIds);
         return result;
+    }
+
+    private static void ValidateDisagreements(ValidationResult result, List<CouncilDisagreement> disagreements, IReadOnlyCollection<string>? requiredIds)
+    {
+        var required = requiredIds?.ToHashSet(StringComparer.Ordinal);
+        var referencedIds = new HashSet<string>(StringComparer.Ordinal);
+        for (var index = disagreements.Count - 1; index >= 0; index--)
+        {
+            var disagreement = disagreements[index];
+            Required(result, disagreement.Summary, $"finalPlan.councilDisagreements[{index}].summary");
+            var normalized = new List<string>();
+            foreach (var sourceId in disagreement.SourceIds.Select(value => value.Trim()).Where(value => value.Length > 0))
+            {
+                if (required is not null && !required.Contains(sourceId))
+                {
+                    Warning(result, "DISAGREEMENT_SOURCE_REMOVED", $"Unknown disagreement catalog ID '{sourceId}' was removed locally.", $"finalPlan.councilDisagreements[{index}].sourceIds");
+                    continue;
+                }
+                if (!referencedIds.Add(sourceId))
+                {
+                    Warning(result, "DISAGREEMENT_DUPLICATE_REMOVED", $"Duplicate disagreement catalog ID '{sourceId}' was removed locally.", $"finalPlan.councilDisagreements[{index}].sourceIds");
+                    continue;
+                }
+                normalized.Add(sourceId);
+            }
+            disagreement.SourceIds = normalized;
+            if (normalized.Count == 0)
+            {
+                disagreements.RemoveAt(index);
+                Warning(result, "DISAGREEMENT_ENTRY_REMOVED", "A disagreement entry without usable catalog IDs was removed locally.", $"finalPlan.councilDisagreements[{index}]");
+            }
+        }
+
+        if (required is null) return;
+        foreach (var missing in required.Except(referencedIds, StringComparer.Ordinal))
+            Invalid(result, "DISAGREEMENT_DROPPED", $"Review disagreement '{missing}' was not preserved by ID.", "finalPlan.councilDisagreements");
     }
 
     private static void ValidateClaims(ValidationResult result, List<Claim> claims)
@@ -179,12 +278,18 @@ public sealed class ArtifactValidator : IArtifactValidator
     {
         Unique(result, decisions.Select(x => x.Id), "DECISION_ID_DUPLICATE", "decisions");
         var claimIds = claims.Select(x => x.Id).ToHashSet(StringComparer.Ordinal);
+        var decisionIds = decisions.Select(x => x.Id).ToHashSet(StringComparer.Ordinal);
         foreach (var decision in decisions)
         {
             Required(result, decision.Id, "decision.id");
             Required(result, decision.Statement, $"decision[{decision.Id}].statement");
-            foreach (var claimId in decision.SupportedBy)
-                if (!claimIds.Contains(claimId)) Invalid(result, "DECISION_CLAIM_MISSING", $"Decision '{decision.Id}' references unknown claim '{claimId}'.", $"decision[{decision.Id}].supportedBy");
+            foreach (var supportId in decision.SupportedBy)
+                if (!claimIds.Contains(supportId) && !decisionIds.Contains(supportId))
+                    Warning(result, "DECISION_SUPPORT_REMOVED", $"Decision '{decision.Id}' referenced unknown claim or decision '{supportId}'; the reference was removed locally.", $"decision[{decision.Id}].supportedBy");
+            decision.SupportedBy = decision.SupportedBy
+                .Where(supportId => claimIds.Contains(supportId) || decisionIds.Contains(supportId))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
         }
     }
 
@@ -197,10 +302,18 @@ public sealed class ArtifactValidator : IArtifactValidator
             Required(result, step.Changes, $"step[{step.Id}].changes");
             Required(result, step.Reason, $"step[{step.Id}].reason");
             if (step.Targets.Count == 0) Invalid(result, "STEP_TARGETS_REQUIRED", $"Step '{step.Id}' requires targets.", $"step[{step.Id}].targets");
-            if (step.Tests.Count == 0 || step.Tests.Any(string.IsNullOrWhiteSpace)) Invalid(result, "STEP_TESTS_REQUIRED", $"Step '{step.Id}' requires non-empty tests.", $"step[{step.Id}].tests");
+            if (step.Tests.RemoveAll(string.IsNullOrWhiteSpace) > 0)
+                Warning(result, "EMPTY_TEST_REMOVED", $"Blank test entries were removed locally from step '{step.Id}'.", $"step[{step.Id}].tests");
+            if (step.Tests.Count == 0) Invalid(result, "STEP_TESTS_REQUIRED", $"Step '{step.Id}' requires non-empty tests.", $"step[{step.Id}].tests");
             var targetOperations = new Dictionary<string, TargetOperation>(StringComparer.OrdinalIgnoreCase);
             foreach (var target in step.Targets)
             {
+                var normalizedPath = NormalizePlanPath(target.Path);
+                if (!string.Equals(target.Path, normalizedPath, StringComparison.Ordinal))
+                {
+                    Warning(result, "TARGET_PATH_NORMALIZED", $"Target path '{target.Path}' was normalized locally to '{normalizedPath}'.", $"step[{step.Id}].targets");
+                    target.Path = normalizedPath;
+                }
                 if (!GitRepositoryService.IsSafeRelativePath(target.Path))
                 {
                     Invalid(result, "TARGET_PATH_INVALID", $"Target path '{target.Path}' must be repository-relative and cannot traverse parents.", $"step[{step.Id}].targets");
@@ -209,11 +322,22 @@ public sealed class ArtifactValidator : IArtifactValidator
                 if (targetOperations.TryGetValue(target.Path, out var existing) && existing != target.Operation)
                     Invalid(result, "TARGET_OPERATION_CONFLICT", $"Target '{target.Path}' has conflicting operations.", $"step[{step.Id}].targets");
                 else targetOperations[target.Path] = target.Operation;
-                if (target.Operation is TargetOperation.Rename or TargetOperation.Move && !GitRepositoryService.IsSafeRelativePath(target.Destination ?? ""))
-                    Invalid(result, "TARGET_DESTINATION_INVALID", $"Target '{target.Path}' requires a safe destination.", $"step[{step.Id}].targets");
+                if (target.Operation is TargetOperation.Rename or TargetOperation.Move)
+                {
+                    var normalizedDestination = NormalizePlanPath(target.Destination ?? "");
+                    if (!string.Equals(target.Destination, normalizedDestination, StringComparison.Ordinal))
+                    {
+                        Warning(result, "TARGET_DESTINATION_NORMALIZED", $"Target destination '{target.Destination}' was normalized locally to '{normalizedDestination}'.", $"step[{step.Id}].targets");
+                        target.Destination = normalizedDestination;
+                    }
+                    if (!GitRepositoryService.IsSafeRelativePath(normalizedDestination))
+                        Invalid(result, "TARGET_DESTINATION_INVALID", $"Target '{target.Path}' requires a safe destination.", $"step[{step.Id}].targets");
+                }
             }
         }
     }
+
+    private static string NormalizePlanPath(string path) => path.Trim().Replace('\\', '/').TrimEnd('/');
 
     private static void Required(ValidationResult result, string value, string location)
     {
@@ -227,6 +351,7 @@ public sealed class ArtifactValidator : IArtifactValidator
     }
 
     private static void Invalid(ValidationResult result, string code, string message, string location) => result.Issues.Add(new(code, message, location, EvidenceStatus.Invalid));
+    private static void Warning(ValidationResult result, string code, string message, string location) => result.Issues.Add(new(code, message, location, EvidenceStatus.NotDeterministicallyVerifiable));
 }
 
 public sealed class EvidenceValidator(IRepositoryContentReader contentReader) : IEvidenceValidator
@@ -245,32 +370,88 @@ public sealed class EvidenceValidator(IRepositoryContentReader contentReader) : 
                 continue;
             }
 
-            var claimIsValid = true;
+            var unsafeReference = false;
+            var verifiedReference = false;
+            var existingFile = false;
+            var deferredIssues = new List<(string Code, string Message)>();
             foreach (var evidence in claim.Evidence)
             {
                 if (!GitRepositoryService.IsSafeRelativePath(evidence.File) || evidence.File.StartsWith(".conclave-input/", StringComparison.Ordinal))
                 {
-                    claimIsValid = false;
+                    unsafeReference = true;
                     result.Issues.Add(new("EVIDENCE_PATH_INVALID", $"Evidence path '{evidence.File}' is not admissible.", claim.Id, EvidenceStatus.Invalid));
                     continue;
                 }
                 var content = await contentReader.ReadTextAsync(snapshot, evidence.File, cancellationToken);
                 if (!content.Exists)
                 {
-                    claimIsValid = false;
-                    result.Issues.Add(new("EVIDENCE_FILE_MISSING", $"Evidence file '{evidence.File}' does not exist in snapshot {snapshot.SnapshotSha}.", claim.Id, EvidenceStatus.Invalid));
+                    deferredIssues.Add(("EVIDENCE_FILE_MISSING", $"Evidence file '{evidence.File}' does not exist in snapshot {snapshot.SnapshotSha}."));
                     continue;
                 }
-                if (!string.IsNullOrWhiteSpace(evidence.Symbol) && !(content.Content?.Contains(evidence.Symbol, StringComparison.Ordinal) ?? false))
+                existingFile = true;
+                if (!string.IsNullOrWhiteSpace(evidence.Symbol) &&
+                    !EvidenceSymbolMatcher.Contains(content.Content ?? "", evidence.Symbol, evidence.Kind, evidence.File))
                 {
-                    claimIsValid = false;
-                    result.Issues.Add(new("EVIDENCE_SYMBOL_MISSING", $"Symbol '{evidence.Symbol}' was not found in '{evidence.File}'.", claim.Id, EvidenceStatus.Invalid));
+                    deferredIssues.Add(("EVIDENCE_SYMBOL_UNVERIFIABLE", $"Symbol '{evidence.Symbol}' was not found exactly in '{evidence.File}'."));
+                    continue;
                 }
+                verifiedReference = true;
             }
-            if (claimIsValid) result.Verified++; else result.Invalid++;
+
+            if (unsafeReference)
+            {
+                result.Invalid++;
+                foreach (var issue in deferredIssues)
+                    result.Issues.Add(new(issue.Code, issue.Message, claim.Id, EvidenceStatus.NotDeterministicallyVerifiable));
+            }
+            else if (verifiedReference)
+            {
+                result.Verified++;
+                foreach (var issue in deferredIssues)
+                    result.Issues.Add(new("EVIDENCE_REFERENCE_IGNORED", issue.Message + " Another evidence reference verified the claim.", claim.Id, EvidenceStatus.NotDeterministicallyVerifiable));
+            }
+            else if (!existingFile)
+            {
+                result.Invalid++;
+                foreach (var issue in deferredIssues)
+                    result.Issues.Add(new(issue.Code, issue.Message, claim.Id, EvidenceStatus.Invalid));
+            }
+            else
+            {
+                result.Unverified++;
+                foreach (var issue in deferredIssues)
+                    result.Issues.Add(new(issue.Code, issue.Message, claim.Id, EvidenceStatus.NotDeterministicallyVerifiable));
+            }
         }
         return result;
     }
+}
+
+internal static partial class EvidenceSymbolMatcher
+{
+    public static bool Contains(string content, string symbol, string kind, string file)
+    {
+        if (content.Contains(symbol, StringComparison.Ordinal)) return true;
+        if (!string.Equals(kind, "string_literal", StringComparison.OrdinalIgnoreCase) || !IsCSharpSource(file)) return false;
+
+        var expanded = CSharpNameofInterpolation().Replace(content, static match =>
+        {
+            var identifiers = CSharpIdentifier().Matches(match.Groups["expression"].Value);
+            return identifiers.Count == 0 ? match.Value : identifiers[^1].Value.TrimStart('@');
+        });
+        return expanded.Contains(symbol, StringComparison.Ordinal);
+    }
+
+    private static bool IsCSharpSource(string file) =>
+        file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ||
+        file.EndsWith(".razor", StringComparison.OrdinalIgnoreCase) ||
+        file.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase);
+
+    [GeneratedRegex(@"(?<!\{)\{\s*nameof\s*\(\s*(?<expression>(?:global::)?@?[A-Za-z_][A-Za-z0-9_]*(?:\s*\.\s*@?[A-Za-z_][A-Za-z0-9_]*)*)\s*\)\s*\}(?!\})", RegexOptions.CultureInvariant)]
+    private static partial Regex CSharpNameofInterpolation();
+
+    [GeneratedRegex(@"@?[A-Za-z_][A-Za-z0-9_]*", RegexOptions.CultureInvariant)]
+    private static partial Regex CSharpIdentifier();
 }
 
 public static class ValidationResults
@@ -323,7 +504,10 @@ public sealed class MarkdownPlanRenderer : IPlanRenderer
         Section(builder, "13. Security Considerations", plan.Security);
         Section(builder, "14. Risks", plan.Risks);
         Section(builder, "15. Alternatives Rejected", plan.RejectedAlternatives);
-        Section(builder, "16. Conclave Disagreements", plan.CouncilDisagreements);
+        builder.AppendLine("## 16. Conclave Disagreements").AppendLine();
+        foreach (var disagreement in plan.CouncilDisagreements)
+            builder.AppendLine($"- {disagreement.Summary} (sources: {string.Join(", ", disagreement.SourceIds)})");
+        Empty(builder, plan.CouncilDisagreements.Count);
         Section(builder, "17. Open Questions", plan.OpenQuestions);
         builder.AppendLine("## 18. Repository Evidence").AppendLine();
         foreach (var claim in plan.Claims)

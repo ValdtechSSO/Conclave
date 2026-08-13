@@ -5,7 +5,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>conclave</ToolCommandName>
     <PackageId>Conclave.Cli</PackageId>
-    <Version>1.0.0</Version>
+    <Version>2.3.5</Version>
     <Description>Evidence-backed multi-model implementation planning CLI.</Description>
     <PackageOutputPath>../../artifacts/packages</PackageOutputPath>
   </PropertyGroup>
@@ -18,8 +18,9 @@
     <ProjectReference Include="../Conclave.Orchestration/Conclave.Orchestration.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="../../schemas/*.json" Link="schemas/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="../../prompts/*.md" Link="prompts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../Conclave.Orchestration/Features/Plan/Schemas/*.json" Link="Features/Plan/Schemas/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../Conclave.Orchestration/Features/Plan/Prompts/*.md" Link="Features/Plan/Prompts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../config/conclave.default.yaml" Link="config/conclave.default.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../config/deepseek-models.json" Link="config/deepseek-models.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

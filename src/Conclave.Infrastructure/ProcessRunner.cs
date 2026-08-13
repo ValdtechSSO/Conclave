@@ -40,9 +40,10 @@ public sealed class ProcessRunner : IProcessRunner
         var stopwatch = Stopwatch.StartNew();
         if (!process.Start())
             throw new InvalidOperationException($"Could not start process '{request.FileName}'.");
+        Report(request.Activity, new(ProcessActivityKind.Started));
 
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
-        var stderrTask = process.StandardError.ReadToEndAsync(CancellationToken.None);
+        var stdoutTask = ReadAsync(process.StandardOutput, ProcessActivityKind.StandardOutput, request.Activity);
+        var stderrTask = ReadAsync(process.StandardError, ProcessActivityKind.StandardError, request.Activity);
 
         using var timeout = request.Timeout is { } duration ? new CancellationTokenSource(duration) : new CancellationTokenSource();
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
@@ -55,6 +56,7 @@ public sealed class ProcessRunner : IProcessRunner
                 await process.StandardInput.WriteAsync(request.StandardInput.AsMemory(), linked.Token);
                 await process.StandardInput.FlushAsync(linked.Token);
                 process.StandardInput.Close();
+                Report(request.Activity, new(ProcessActivityKind.InputDelivered));
             }
             await process.WaitForExitAsync(linked.Token);
         }
@@ -68,6 +70,7 @@ public sealed class ProcessRunner : IProcessRunner
 
         var stdout = await stdoutTask;
         var stderr = await stderrTask;
+        Report(request.Activity, new(ProcessActivityKind.Exited, process.ExitCode.ToString(System.Globalization.CultureInfo.InvariantCulture)));
         stopwatch.Stop();
         var outputTruncated = stdout.Length > request.MaxOutputCharacters || stderr.Length > request.MaxOutputCharacters;
         return new ProcessResult(
@@ -84,6 +87,26 @@ public sealed class ProcessRunner : IProcessRunner
         SensitiveFragments.Any(fragment => name.Contains(fragment, StringComparison.OrdinalIgnoreCase));
 
     private static string Truncate(string value, int limit) => value.Length <= limit ? value : value[..limit] + "\n[output truncated]";
+
+    private static async Task<string> ReadAsync(StreamReader reader, ProcessActivityKind kind, Action<ProcessActivity>? activity)
+    {
+        var result = new StringBuilder();
+        var buffer = new char[4096];
+        while (true)
+        {
+            var read = await reader.ReadAsync(buffer.AsMemory(), CancellationToken.None);
+            if (read == 0) return result.ToString();
+            var chunk = new string(buffer, 0, read);
+            result.Append(chunk);
+            Report(activity, new(kind, chunk));
+        }
+    }
+
+    private static void Report(Action<ProcessActivity>? activity, ProcessActivity update)
+    {
+        try { activity?.Invoke(update); }
+        catch { }
+    }
 
     private static void TryKill(Process process)
     {

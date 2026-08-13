@@ -36,7 +36,7 @@ public static class Program
 
     private static async Task<int> PlanAsync(string[] args, CancellationToken cancellationToken)
     {
-        var options = Arguments.Parse(args, ["json", "keep-workspaces", "development"]);
+        var options = Arguments.Parse(args, ["json", "keep-workspaces", "development", "no-progress", "whole-repository"]);
         var runId = options.Required("id");
         var directory = Path.GetFullPath(options.Value("directory") ?? ".");
         var prompt = options.Value("prompt");
@@ -57,10 +57,25 @@ public static class Program
             _ => throw new ArgumentException("--evidence-policy must be annotate or fail.")
         };
         var providers = options.Value("providers")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var scope = options.Value("scope")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var configuration = new ConfigurationLoader().Load(directory);
+        ApplyModelOverrides(configuration, options.Value("models"));
+        if (options.Value("max-cost-usd") is { } maxCostText)
+        {
+            var maxCost = decimal.Parse(maxCostText, System.Globalization.CultureInfo.InvariantCulture);
+            if (maxCost <= 0) throw new ArgumentException("--max-cost-usd must be positive.");
+            configuration.RunBudget.MaxCostUsd = maxCost;
+            foreach (var provider in configuration.Providers.Values) provider.MaxCostUsd = Math.Min(provider.MaxCostUsd, maxCost);
+        }
         var composition = Compose(configuration);
-        var request = new ConclaveRequest(runId, directory, prompt!, snapshotMode, options.Value("output"), providers, options.Flag("keep-workspaces"), evidencePolicy, options.Flag("development"));
-        var orchestrator = new PlanOrchestrator(configuration, composition.Adapters, composition.Snapshots, composition.Workspaces, composition.Store, new ArtifactParser(), new ArtifactValidator(), new EvidenceValidator(composition.Snapshots), new MarkdownPlanRenderer(), new BudgetManager(configuration), new RandomShuffler(), AppContext.BaseDirectory);
+        var request = new ConclaveRequest(runId, directory, prompt!, snapshotMode, options.Value("output"), providers, options.Flag("keep-workspaces"), evidencePolicy, options.Flag("development"), scope, options.Flag("whole-repository"));
+        var progressFormat = (options.Value("progress-format") ?? "text").ToLowerInvariant();
+        if (progressFormat is not ("text" or "jsonl")) throw new ArgumentException("--progress-format must be text or jsonl.");
+        var progressSinks = new List<IConclaveProgressSink> { new JsonlFileProgressSink(Path.Combine(composition.Store.GetRunPath(runId), "progress.jsonl")) };
+        if (!options.Flag("no-progress")) progressSinks.Add(new ConsoleProgressSink(progressFormat == "jsonl"));
+        IConclaveProgressSink progress = new CompositeProgressSink([.. progressSinks]);
+        var planAssetsPath = Path.Combine(AppContext.BaseDirectory, "Features", "Plan");
+        var orchestrator = new PlanOrchestrator(configuration, composition.Adapters, composition.Snapshots, composition.Workspaces, composition.Store, new ArtifactParser(), new ArtifactValidator(), new EvidenceValidator(composition.Snapshots), new MarkdownPlanRenderer(), new BudgetManager(configuration), new RandomShuffler(), planAssetsPath, progress);
         var result = await orchestrator.ExecuteAsync(request, cancellationToken);
         if (options.Flag("json")) Json(result);
         else
@@ -76,10 +91,17 @@ public static class Program
 
     private static async Task<int> ShowAsync(string[] args, CancellationToken cancellationToken)
     {
-        var options = Arguments.Parse(args, ["json", "plan"], allowPositionals: true);
+        var options = Arguments.Parse(args, ["json", "plan", "progress"], allowPositionals: true);
         var runId = options.Positionals.FirstOrDefault() ?? throw new ArgumentException("show requires a run ID.");
         var configuration = new ConfigurationLoader().Load(Environment.CurrentDirectory);
         var service = new ShowService(new FileRunStore(configuration.HomePath));
+        if (options.Flag("progress"))
+        {
+            var progress = await service.GetProgressAsync(runId, cancellationToken);
+            if (progress is null) return Fail(ConclaveExitCode.InvalidRequest, $"Run '{runId}' has no progress events.");
+            Console.Write(progress);
+            return 0;
+        }
         var result = await service.GetAsync(runId, cancellationToken);
         if (result is null) return Fail(ConclaveExitCode.InvalidRequest, $"Run '{runId}' was not found.");
         if (options.Flag("plan"))
@@ -116,7 +138,9 @@ public static class Program
             foreach (var check in report.Checks) Console.WriteLine($"{Mark(check.Success)} {check.Name}: {check.Detail}");
             Console.WriteLine("\nProviders\n");
             foreach (var provider in report.Providers) Console.WriteLine($"{Mark(provider.Success)} {provider.Name}: {provider.Detail}");
-            Console.WriteLine($"\nConfiguration\nproposal quorum: {report.MinimumProposalQuorum}\nreview quorum: {report.MinimumReviewQuorum}\nevidence policy: {report.EvidencePolicy}");
+            Console.WriteLine($"\nConfiguration\nproposal quorum: {report.MinimumProposalQuorum}\nreview quorum: {report.MinimumReviewQuorum}\nevidence policy: {report.EvidencePolicy}\nrun cost cap: ${configuration.RunBudget.MaxCostUsd:F2}");
+            foreach (var provider in configuration.Providers.Where(x => x.Value.Enabled))
+                Console.WriteLine($"{provider.Key} models: proposal={provider.Value.Proposal.Model}, review={provider.Value.Review.Model}, synthesis={provider.Value.Synthesis.Model}; call cap=${provider.Value.MaxCostUsd:F2}; timeout={provider.Value.TimeoutSeconds}s");
             Console.WriteLine(report.Ready ? "\nConclave ready." : "\nConclave is not ready.");
         }
         return report.Ready ? 0 : (int)ConclaveExitCode.ConfigurationError;
@@ -148,6 +172,24 @@ public static class Program
         return new(processes, snapshots, workspaces, new FileRunStore(configuration.HomePath), adapters);
     }
 
+    private static void ApplyModelOverrides(ConclaveConfiguration configuration, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        foreach (var assignment in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var separator = assignment.IndexOf('=');
+            if (separator <= 0 || separator == assignment.Length - 1) throw new ArgumentException("--models must use provider=model assignments separated by commas.");
+            var providerId = assignment[..separator].Trim();
+            var model = assignment[(separator + 1)..].Trim();
+            if (!configuration.Providers.TryGetValue(providerId, out var provider)) throw new ArgumentException($"Unknown provider in --models: {providerId}.");
+            provider.Proposal.Model = model;
+            provider.Review.Model = model;
+            provider.Synthesis.Model = model;
+        }
+        foreach (var fallback in configuration.SynthesisFallback)
+            if (configuration.Providers.TryGetValue(fallback.Provider, out var provider)) fallback.Model = provider.Synthesis.Model;
+    }
+
     private static void Json<T>(T value) => Console.WriteLine(JsonSerializer.Serialize(value, ConclaveJson.Options));
     private static string Mark(bool success) => success ? "✓" : "✗";
     private static int Fail(ConclaveExitCode code, string message) { Console.Error.WriteLine($"conclave: {message}"); return (int)code; }
@@ -157,17 +199,23 @@ Conclave — evidence-backed multi-model implementation planning
 
 Usage:
   conclave plan --id <id> --directory <repo> (--prompt <text> | --prompt-file <file>) [options]
-  conclave show <id> [--plan] [--json]
+  conclave show <id> [--plan | --progress] [--json]
   conclave doctor [--json]
   conclave prune [--dry-run] [--json]
 
 Plan options:
   --providers claude,codex,deepseek
+  --models claude=<model>,codex=<model>,deepseek=<model>
+  --scope <path,path,...>  Required recommended starting paths for repository exploration
+  --whole-repository      Explicitly start exploration at the repository root
   --snapshot head|working-tree
+  --max-cost-usd <amount> Maximum reported USD cost for the run
   --evidence-policy annotate|fail
   --output <path>
   --keep-workspaces
   --development        Allow a single-provider development run
+  --no-progress        Disable live progress written to stderr
+  --progress-format text|jsonl
   --json               Stable machine-readable stdout
 """);
 

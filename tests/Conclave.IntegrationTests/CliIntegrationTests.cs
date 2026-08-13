@@ -31,7 +31,7 @@ public sealed class CliIntegrationTests : IAsyncLifetime
         var cliAssembly = typeof(Conclave.Cli.Program).Assembly.Location;
         var result = await _process.RunAsync(new ProcessRequest("dotnet",
         [
-            cliAssembly, "plan", "--id", "CLI-001", "--directory", repository, "--prompt", "Add feature", "--providers", "p1,p2", "--json"
+            cliAssembly, "plan", "--id", "CLI-001", "--directory", repository, "--prompt", "Add feature", "--providers", "p1,p2", "--models", "p1=cheap-one,p2=cheap-two", "--scope", "README.md", "--progress-format", "jsonl", "--json"
         ], repository, Environment: new Dictionary<string, string?> { ["CONCLAVE_HOME"] = home }, Timeout: TimeSpan.FromMinutes(2)), CancellationToken.None);
 
         Assert.True(result.ExitCode == 0, result.StandardError + result.StandardOutput);
@@ -42,6 +42,14 @@ public sealed class CliIntegrationTests : IAsyncLifetime
         Assert.Equal(2, run.ReviewCount);
         Assert.True(File.Exists(run.PlanPath));
         Assert.StartsWith(Path.Combine(home, "runs"), run.RunPath, StringComparison.Ordinal);
+        Assert.Contains(run.Stages, x => x.Provider == "p1" && x.Model == "cheap-one");
+        Assert.Contains(run.Stages, x => x.Provider == "p2" && x.Model == "cheap-two");
+        Assert.Contains("\"phase\":\"proposal\"", result.StandardError, StringComparison.Ordinal);
+        Assert.Contains("\"activityCode\":\"task_assigned\"", result.StandardError, StringComparison.Ordinal);
+        Assert.Contains("\"phase\":\"run\",\"status\":\"succeeded\"", result.StandardError, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(run.RunPath, "progress.jsonl")));
+        Assert.True(File.Exists(Path.Combine(run.RunPath, "request", "search-guide.json")));
+        Assert.False(File.Exists(Path.Combine(run.RunPath, "request", "context.md")));
         await Git(repository, "update-ref", "-d", run.SnapshotRef!);
     }
 

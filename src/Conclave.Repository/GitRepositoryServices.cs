@@ -5,8 +5,9 @@ using Conclave.Infrastructure;
 
 namespace Conclave.Repository;
 
-public sealed class GitRepositoryService(IProcessRunner processRunner) : IRepositorySnapshotService, IRepositoryContentReader
+public sealed class GitRepositoryService(IProcessRunner processRunner) : IRepositorySnapshotService, IRepositoryContentReader, IRepositorySearchGuideBuilder
 {
+
     public async Task<OriginalRepositoryState> CaptureStateAsync(string repositoryPath, CancellationToken cancellationToken)
     {
         var root = await ResolveRootAsync(repositoryPath, cancellationToken);
@@ -67,6 +68,22 @@ public sealed class GitRepositoryService(IProcessRunner processRunner) : IReposi
         var spec = $"{snapshot.SnapshotSha}:{repositoryRelativePath.Replace('\\', '/')}";
         var result = await GitAsync(snapshot.RepositoryPath, ["show", spec], cancellationToken, 2_000_000);
         return result.ExitCode == 0 ? (true, result.StandardOutput) : (false, null);
+    }
+
+    public async Task<RepositorySearchGuide> BuildAsync(RepositorySnapshot snapshot, IReadOnlyList<string> suggestedRoots, RepositorySearchConfiguration limits, CancellationToken cancellationToken)
+    {
+        if (suggestedRoots.Count == 0) throw new ArgumentException("At least one suggested repository root is required.", nameof(suggestedRoots));
+        var normalized = suggestedRoots.Select(x => x.Replace('\\', '/').TrimEnd('/')).Distinct(StringComparer.Ordinal).ToArray();
+        if (normalized.Length > limits.MaxSuggestedRoots) throw new ArgumentException($"At most {limits.MaxSuggestedRoots} suggested repository roots are allowed.", nameof(suggestedRoots));
+        if (normalized.Any(x => x != "." && !IsSafeRelativePath(x))) throw new ArgumentException("Every suggested root must be a safe repository-relative path.", nameof(suggestedRoots));
+
+        var listArguments = new List<string> { "ls-tree", "-r", "--name-only", snapshot.SnapshotSha, "--" };
+        listArguments.AddRange(normalized);
+        var listed = await GitAsync(snapshot.RepositoryPath, listArguments, cancellationToken, 2_000_000);
+        EnsureSuccess(listed, "validate suggested repository roots");
+        var matchingFileCount = listed.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.Ordinal).Count();
+        if (matchingFileCount == 0) throw new InvalidOperationException("The suggested repository roots contain no files in the retained snapshot.");
+        return new RepositorySearchGuide(normalized, matchingFileCount);
     }
 
     private async Task<string> CreateWorkingTreeCommitAsync(string root, string baseHead, CancellationToken cancellationToken)
