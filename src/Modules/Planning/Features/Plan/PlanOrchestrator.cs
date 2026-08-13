@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using Conclave.Planning;
 
-namespace Conclave.Planning.Features.CreatePlan;
+namespace Conclave.Planning.Features.Plan;
 
 public sealed class ConclaveException(ConclaveExitCode exitCode, string message) : Exception(message)
 {

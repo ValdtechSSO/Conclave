@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using Conclave.Planning;
 
-namespace Conclave.Planning.Features.CreatePlan;
+namespace Conclave.Planning.Features.Plan;
 
 public sealed class RandomShuffler : IShuffler
 {

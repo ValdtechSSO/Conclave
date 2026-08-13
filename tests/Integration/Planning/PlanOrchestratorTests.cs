@@ -1,6 +1,6 @@
 using System.Text.Json;
 using Conclave.Planning;
-using Conclave.Planning.Features.CreatePlan;
+using Conclave.Planning.Features.Plan;
 using Conclave.Planning.Infrastructure;
 
 namespace Conclave.Planning.IntegrationTests;
@@ -319,7 +319,7 @@ public sealed class PlanOrchestratorTests : IAsyncLifetime
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var planAssets = Path.Combine(directory.FullName, "src", "Modules", "Planning", "Features", "CreatePlan");
+            var planAssets = Path.Combine(directory.FullName, "src", "Modules", "Planning", "Features", "Plan");
             if (Directory.Exists(Path.Combine(planAssets, "Schemas")) && Directory.Exists(Path.Combine(planAssets, "Prompts"))) return planAssets;
             directory = directory.Parent;
         }

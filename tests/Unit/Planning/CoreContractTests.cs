@@ -1,6 +1,6 @@
 using System.Text.Json;
 using Conclave.Planning;
-using Conclave.Planning.Features.CreatePlan;
+using Conclave.Planning.Features.Plan;
 using Conclave.Planning.Infrastructure;
 
 namespace Conclave.Planning.UnitTests;

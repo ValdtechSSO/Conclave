@@ -31,10 +31,10 @@ for module in src/Modules/*; do
 done
 test "$found_module" = true
 
-test -f src/Modules/Planning/Features/CreatePlan/PlanOrchestrator.cs
-test -f src/Modules/Planning/Features/ShowRun/ShowRunService.cs
-test -f src/Modules/Planning/Features/DiagnoseEnvironment/DoctorService.cs
-test -f src/Modules/Planning/Features/PruneRuns/PruneRunsService.cs
+test -f src/Modules/Planning/Features/Plan/PlanOrchestrator.cs
+test -f src/Modules/Planning/Features/Environment/DoctorService.cs
+test -f src/Modules/Planning/Features/Run/ShowRunService.cs
+test -f src/Modules/Planning/Features/Run/PruneRunService.cs
 test -f domain/contexts/planning.md
 test -f architecture/decisions/ADR-001-compact-modular-architecture.md
 

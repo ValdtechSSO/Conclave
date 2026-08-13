@@ -19,7 +19,7 @@
 El resultado de esta propuesta no es una nueva variante de Clean Architecture ni una plataforma multiagente. Es una **estructura de repositorio** que combina:
 
 1. una arquitectura modular del producto;
-2. vertical slices por caso de uso;
+2. vertical slices agrupadas por capacidades funcionales cohesivas;
 3. conocimiento arquitectónico y de dominio separado del código;
 4. contratos semánticos mantenidos por humanos;
 5. índices estructurales generados desde el código;
@@ -85,17 +85,67 @@ Esto reduce el espacio de búsqueda y mantiene próximas las piezas que cambian 
 
 ## 2.3 Vertical slice primero
 
-Todo nuevo comportamiento de aplicación nace dentro de:
+Todo nuevo comportamiento de aplicación nace dentro de la feature funcional que
+posee su vocabulario, estado y ciclo de vida:
 
 ```text
-src/Modules/{Module}/Features/{UseCase}/
+src/Modules/{Module}/Features/{FeatureArea}/
 ```
 
 No existe una carpeta global o local `Application/Services` como destino predeterminado.
 
 Regla normativa:
 
-> **New application behavior MUST start inside a feature slice.**
+> **New application behavior MUST start inside the owning module and the
+> smallest cohesive feature area that owns its vocabulary, state, and lifecycle.
+> A command, handler, or use case MUST NOT automatically create a new root
+> feature directory.**
+
+Una feature raíz representa una capacidad funcional cohesiva dentro del módulo,
+no necesariamente un único comando, handler o caso de uso.
+
+Varias operaciones permanecen en la misma feature cuando:
+
+- actúan sobre el mismo concepto o agregado;
+- comparten estado, almacenamiento o ciclo de vida;
+- están gobernadas por los mismos invariantes;
+- obligan a revisar sustancialmente el mismo contexto;
+- separarlas aumentaría la navegación sin establecer un límite real.
+
+Una nueva feature raíz se crea únicamente cuando existe independencia actual y
+verificable, por ejemplo:
+
+- vocabulario funcional propio;
+- invariantes o perfil de riesgo diferentes;
+- ownership independiente;
+- dependencias claramente distintas;
+- evolución y pruebas mayormente independientes;
+- un límite que puede comprobarse mediante reglas de arquitectura.
+
+La estructura interna también se crea bajo demanda. Varias operaciones pequeñas
+pueden compartir directamente la carpeta de feature. Una operación obtiene una
+subcarpeta propia cuando su implementación tiene suficiente contenido o evolución
+independiente. No se crea un nivel de carpetas por cada comando o clase.
+
+Ejemplo:
+
+```text
+Modules/Planning/Features/
+├── Plan/
+│   ├── PlanOrchestrator.cs
+│   ├── Prompts/
+│   ├── Schemas/
+│   └── Validation/
+├── Environment/
+│   └── DoctorService.cs
+└── Run/
+    ├── ShowRunService.cs
+    └── PruneRunService.cs
+```
+
+`ShowRun` y `PruneRun` permanecen bajo `Run` porque operan sobre el mismo
+concepto, almacenamiento y ciclo de vida. Agrupaciones genéricas como
+`Operations`, `Services` o `Handlers` no sustituyen un nombre funcional.
 
 El código solo se promociona fuera del slice cuando existe una razón mecánica y verificable.
 
@@ -401,18 +451,14 @@ src/Modules/Classification/
 │   ├── Events/
 │   └── PublicApi/
 ├── Features/
-│   ├── GetClassification/
-│   │   ├── Endpoint.cs
-│   │   ├── Query.cs
-│   │   ├── Handler.cs
+│   ├── Standings/
+│   │   ├── GetClassificationHandler.cs
+│   │   ├── RecalculateClassificationHandler.cs
 │   │   ├── Validator.cs
-│   │   ├── Response.cs
 │   │   └── Mapping.cs
-│   ├── RecalculateClassification/
-│   │   ├── Command.cs
-│   │   ├── Handler.cs
-│   │   ├── Validator.cs
-│   │   └── Result.cs
+│   ├── Disqualification/
+│   │   ├── DisqualifyTeamHandler.cs
+│   │   └── Validator.cs
 │   └── Shared/                                    [excepcional]
 └── Infrastructure/
     ├── Persistence/
@@ -424,12 +470,12 @@ src/Modules/Classification/
 
 ## 4.1 Regla de ubicación de la lógica
 
-### Permanece en `Features/{UseCase}` cuando
+### Permanece en `Features/{FeatureArea}` cuando
 
-- solo se utiliza en un caso de uso;
+- pertenece a una capacidad funcional cohesiva del módulo;
 - orquesta una operación concreta;
 - transforma request y response;
-- coordina repositorios o servicios para ese caso;
+- coordina repositorios o servicios para esa capacidad;
 - contiene validaciones específicas de la operación.
 
 ### Se promociona a `Domain/` cuando
@@ -934,8 +980,8 @@ Una afirmación declarativa nunca satisface por sí sola un quality gate.
 
 ```text
 tests/
-├── Unit/{Module}/{Feature}/
-├── Integration/{Module}/{Feature}/
+├── Unit/{Module}/{FeatureArea}/
+├── Integration/{Module}/{FeatureArea}/
 ├── Contract/{Module}/
 ├── Architecture/
 ├── EndToEnd/
@@ -948,10 +994,10 @@ Los paths de tests reflejan los paths funcionales del producto.
 Ejemplo:
 
 ```text
-src/Modules/Classification/Features/GetClassification/
-tests/Unit/Classification/GetClassification/
-tests/Integration/Classification/GetClassification/
-tests/Performance/Classification/GetClassification/
+src/Modules/Classification/Features/Standings/
+tests/Unit/Classification/Standings/
+tests/Integration/Classification/Standings/
+tests/Performance/Classification/Standings/
 ```
 
 ## 12.2 Tests de la infraestructura agentic
@@ -1101,7 +1147,8 @@ CI debe validar:
 4. el índice fue generado para el commit actual;
 5. ownership declarado coincide con las políticas de acceso observadas;
 6. no existen dependencias prohibidas entre módulos;
-7. nuevos handlers están dentro de `Features/{UseCase}`;
+7. nuevos handlers están dentro de `Features/{FeatureArea}` y no directamente en
+   `Features/`; una feature raíz nueva requiere una capacidad funcional justificable;
 8. endpoints no acceden directamente a Infrastructure;
 9. `BuildingBlocks` no contiene lógica de negocio;
 10. `shared`, `common`, `helpers` y `services` no crecen sin una excepción aprobada;
@@ -1280,7 +1327,7 @@ Crear:
 Aplicar a código nuevo:
 
 ```text
-src/Modules/{Module}/Features/{UseCase}/
+src/Modules/{Module}/Features/{FeatureArea}/
 ```
 
 No migrar masivamente todo el código existente. Reorganizar al tocar cada área.
@@ -1378,19 +1425,24 @@ Merge readiness
 2. El código se organiza por módulos funcionales y vertical slices.
 3. No existe `Application/Services` como ubicación predeterminada.
 4. La lógica nueva nace dentro de la feature.
-5. Los contratos manuales contienen solo semántica no derivable.
-6. Paths, endpoints, símbolos, acceso a datos y tests se generan.
-7. CI contrasta ownership declarado con arquitectura observada.
-8. `AGENTS.md` actúa como router, no como enciclopedia.
-9. El contexto se recupera iterativamente mediante un Context Broker.
-10. El contexto inicial es mínimo.
-11. El plano de control y evidencia es una parte de primer nivel de la estructura.
-12. La evidencia queda ligada al commit.
-13. Una declaración del agente no satisface un quality gate.
-14. La arquitectura contiene evaluaciones falsables.
-15. La búsqueda semántica es un fallback.
-16. Multiagente es opcional y debe justificarse con métricas.
-17. Para publicación se evita reclamar `AOSE` como un nuevo acrónimo.
+5. Una feature raíz representa una capacidad cohesiva, no automáticamente un
+   comando, handler o caso de uso; las operaciones que comparten concepto y ciclo
+   de vida permanecen juntas.
+6. La estructura interna de una feature se materializa solo cuando la complejidad
+   o evolución independiente la justifica.
+7. Los contratos manuales contienen solo semántica no derivable.
+8. Paths, endpoints, símbolos, acceso a datos y tests se generan.
+9. CI contrasta ownership declarado con arquitectura observada.
+10. `AGENTS.md` actúa como router, no como enciclopedia.
+11. El contexto se recupera iterativamente mediante un Context Broker.
+12. El contexto inicial es mínimo.
+13. El plano de control y evidencia es una parte de primer nivel de la estructura.
+14. La evidencia queda ligada al commit.
+15. Una declaración del agente no satisface un quality gate.
+16. La arquitectura contiene evaluaciones falsables.
+17. La búsqueda semántica es un fallback.
+18. Multiagente es opcional y debe justificarse con métricas.
+19. Para publicación se evita reclamar `AOSE` como un nuevo acrónimo.
 
 ---
 

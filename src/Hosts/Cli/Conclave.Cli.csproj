@@ -14,8 +14,8 @@
     <ProjectReference Include="../../Modules/Planning/Infrastructure/Conclave.Planning.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="../../Modules/Planning/Features/CreatePlan/Schemas/*.json" Link="Modules/Planning/Features/CreatePlan/Schemas/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="../../Modules/Planning/Features/CreatePlan/Prompts/*.md" Link="Modules/Planning/Features/CreatePlan/Prompts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../Modules/Planning/Features/Plan/Schemas/*.json" Link="Modules/Planning/Features/Plan/Schemas/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../Modules/Planning/Features/Plan/Prompts/*.md" Link="Modules/Planning/Features/Plan/Prompts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../Modules/Planning/Infrastructure/Configuration/conclave.default.yaml" Link="Modules/Planning/Infrastructure/Configuration/conclave.default.yaml" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../Modules/Planning/Infrastructure/Configuration/deepseek-models.json" Link="Modules/Planning/Infrastructure/Configuration/deepseek-models.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

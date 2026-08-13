@@ -1,6 +1,6 @@
 using Conclave.Planning;
 
-namespace Conclave.Planning.Features.ShowRun;
+namespace Conclave.Planning.Features.Run;
 
 public sealed class ShowService(IRunStore store)
 {

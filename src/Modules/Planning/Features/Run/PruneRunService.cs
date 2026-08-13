@@ -1,6 +1,6 @@
 using Conclave.Planning;
 
-namespace Conclave.Planning.Features.PruneRuns;
+namespace Conclave.Planning.Features.Run;
 
 public sealed class PruneReport
 {

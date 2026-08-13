@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Owns the complete lifecycle of evidence-backed planning runs: creation, display,
-environment diagnosis, retention, and cleanup.
+Owns evidence-backed planning through three feature areas: plan production,
+environment diagnosis, and the lifecycle of retained runs.
 
 ## Read before changing
 
@@ -24,5 +24,6 @@ environment diagnosis, retention, and cleanup.
 - Never include a provider's own proposal in its review input.
 - Preserve validation warnings and disagreements through synthesis.
 - Keep application behavior in the owning feature slice.
+- Keep run inspection and retention together under `Features/Run`.
 - Keep Git, providers, processes, persistence, and configuration under local infrastructure.
 - Do not add empty directories, speculative abstractions, or technical modules.

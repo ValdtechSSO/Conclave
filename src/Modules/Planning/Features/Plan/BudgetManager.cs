@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Conclave.Planning;
 
-namespace Conclave.Planning.Features.CreatePlan;
+namespace Conclave.Planning.Features.Plan;
 
 public sealed class BudgetManager(ConclaveConfiguration configuration) : IBudgetManager
 {

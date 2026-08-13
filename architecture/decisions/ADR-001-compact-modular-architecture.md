@@ -19,8 +19,9 @@ not independent product modules.
 
 - `src/Modules/Planning` is the module root and owns its `AGENTS.md`, semantic
   contract, domain vocabulary, ports, use-case slices, and infrastructure.
-- Application behavior starts in an explicit slice under `Features`: `CreatePlan`,
-  `ShowRun`, `DiagnoseEnvironment`, or `PruneRuns`.
+- Application behavior is grouped under three cohesive feature areas: `Plan`,
+  `Environment`, and `Run`. Run inspection and retention operations remain
+  colocated under `Run` because they share the run lifecycle and storage model.
 - `src/Hosts/Cli` parses console input, composes the module, and presents results;
   it does not own application behavior.
 - Product code uses three assemblies: `Conclave.Planning`,

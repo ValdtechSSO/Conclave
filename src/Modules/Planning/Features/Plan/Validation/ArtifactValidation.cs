@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Conclave.Planning;
 
-namespace Conclave.Planning.Features.CreatePlan;
+namespace Conclave.Planning.Features.Plan;
 
 public sealed record ArtifactParseResult<T>(T? Artifact, string? Error, string? RepairedJson = null, string? RepairDescription = null) where T : class;
 

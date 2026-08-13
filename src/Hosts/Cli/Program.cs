@@ -1,9 +1,8 @@
 using System.Text.Json;
 using Conclave.Planning;
-using Conclave.Planning.Features.CreatePlan;
-using Conclave.Planning.Features.DiagnoseEnvironment;
-using Conclave.Planning.Features.PruneRuns;
-using Conclave.Planning.Features.ShowRun;
+using Conclave.Planning.Features.Environment;
+using Conclave.Planning.Features.Plan;
+using Conclave.Planning.Features.Run;
 using Conclave.Planning.Infrastructure;
 
 namespace Conclave.Cli;
@@ -73,7 +72,7 @@ public static class Program
         var progressSinks = new List<IConclaveProgressSink> { new JsonlFileProgressSink(Path.Combine(composition.Store.GetRunPath(runId), "progress.jsonl")) };
         if (!options.Flag("no-progress")) progressSinks.Add(new ConsoleProgressSink(progressFormat == "jsonl"));
         IConclaveProgressSink progress = new CompositeProgressSink([.. progressSinks]);
-        var planAssetsPath = Path.Combine(AppContext.BaseDirectory, "Modules", "Planning", "Features", "CreatePlan");
+        var planAssetsPath = Path.Combine(AppContext.BaseDirectory, "Modules", "Planning", "Features", "Plan");
         var orchestrator = new PlanOrchestrator(configuration, composition.Adapters, composition.Snapshots, composition.Workspaces, composition.Store, new ArtifactParser(), new ArtifactValidator(), new EvidenceValidator(composition.Snapshots), new MarkdownPlanRenderer(), new BudgetManager(configuration), new RandomShuffler(), planAssetsPath, progress);
         var result = await orchestrator.ExecuteAsync(request, cancellationToken);
         if (options.Flag("json")) Json(result);

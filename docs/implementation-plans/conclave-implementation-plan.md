@@ -248,13 +248,14 @@ conclave/
 │   │       ├── module.contract.yml
 │   │       ├── Contracts/
 │   │       ├── Features/
-│   │       │   ├── CreatePlan/
+│   │       │   ├── Plan/
 │   │       │   │   ├── Prompts/
 │   │       │   │   ├── Schemas/
 │   │       │   │   └── Validation/
-│   │       │   ├── ShowRun/
-│   │       │   ├── DiagnoseEnvironment/
-│   │       │   └── PruneRuns/
+│   │       │   ├── Environment/
+│   │       │   └── Run/
+│   │       │       ├── ShowRunService.cs
+│   │       │       └── PruneRunService.cs
 │   │       └── Infrastructure/
 │   │           ├── Configuration/
 │   │           ├── Git/
@@ -283,13 +284,13 @@ The reference architecture is not materialized as a set of empty placeholders.
 
 `src/Modules/Planning` owns planning-run vocabulary, contracts, behavior, and
 technical implementations. Application behavior starts in one of its explicit
-feature slices:
+feature areas:
 
-- `CreatePlan` coordinates snapshot, proposal, validation, cross-review,
+- `Plan` coordinates snapshot, proposal, validation, cross-review,
   synthesis, final validation, and rendering;
-- `ShowRun` reads retained run results, plans, and progress;
-- `DiagnoseEnvironment` checks provider and repository prerequisites;
-- `PruneRuns` applies retention and snapshot cleanup.
+- `Environment` checks provider and repository prerequisites;
+- `Run` owns inspection, progress access, retention, and snapshot cleanup for
+  existing planning runs.
 
 The module uses two assemblies. `Conclave.Planning` contains contracts and
 features and does not reference infrastructure. `Conclave.Planning.Infrastructure`

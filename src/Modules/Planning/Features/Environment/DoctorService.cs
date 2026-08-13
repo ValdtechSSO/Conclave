@@ -1,6 +1,6 @@
 using Conclave.Planning;
 
-namespace Conclave.Planning.Features.DiagnoseEnvironment;
+namespace Conclave.Planning.Features.Environment;
 
 public sealed class DoctorCheck
 {
@@ -34,7 +34,7 @@ public sealed class DoctorService(
             MinimumReviewQuorum = configuration.MinimumReviewQuorum,
             EvidencePolicy = configuration.EvidencePolicy.ToString().ToLowerInvariant()
         };
-        var git = await processes.RunAsync(new ProcessRequest("git", ["--version"], Environment.CurrentDirectory, Timeout: TimeSpan.FromSeconds(10)), cancellationToken);
+        var git = await processes.RunAsync(new ProcessRequest("git", ["--version"], System.Environment.CurrentDirectory, Timeout: TimeSpan.FromSeconds(10)), cancellationToken);
         report.Checks.Add(new() { Name = "Git", Success = git.ExitCode == 0, Detail = (git.StandardOutput + git.StandardError).Trim() });
         report.Checks.Add(CheckHome());
         report.Checks.Add(await CheckSnapshotAndWorktreeAsync(cancellationToken));

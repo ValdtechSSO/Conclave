@@ -1,6 +1,5 @@
 using Conclave.Planning;
-using Conclave.Planning.Features.PruneRuns;
-using Conclave.Planning.Features.ShowRun;
+using Conclave.Planning.Features.Run;
 using Conclave.Planning.Infrastructure;
 
 namespace Conclave.Planning.IntegrationTests;

@@ -1,5 +1,5 @@
 using Conclave.Planning;
-using Conclave.Planning.Features.CreatePlan;
+using Conclave.Planning.Features.Plan;
 
 namespace Conclave.Planning.UnitTests;
 
@@ -303,7 +303,7 @@ public sealed class ValidationTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var planAssets = Path.Combine(directory.FullName, "src", "Modules", "Planning", "Features", "CreatePlan");
+            var planAssets = Path.Combine(directory.FullName, "src", "Modules", "Planning", "Features", "Plan");
             if (Directory.Exists(Path.Combine(planAssets, "Schemas"))) return planAssets;
             directory = directory.Parent;
         }
