@@ -1,0 +1,110 @@
+{
+  "$schema": "../../contracts/schemas/architecture-policy.schema.json",
+  "version": 1,
+  "project": "conclave",
+  "adapter": "dotnet",
+  "roots": {
+    "modules": "src/Modules",
+    "hosts": "src/Hosts"
+  },
+  "projectSearchRoots": [
+    "src"
+  ],
+  "structureSearchRoots": [
+    "src"
+  ],
+  "moduleContract": {
+    "fileName": "module.contract.yml",
+    "schema": ".agentic/contracts/schemas/module-contract.schema.json",
+    "forbiddenStructuralFields": [
+      "paths",
+      "entrypoints",
+      "handlers",
+      "classes",
+      "tests",
+      "entities_read",
+      "entities_written",
+      "routes"
+    ]
+  },
+  "technicalModuleNames": [
+    "Git",
+    "Providers",
+    "Repositories",
+    "Validation",
+    "Services",
+    "Infrastructure"
+  ],
+  "forbiddenDirectoryNames": [
+    "Services",
+    "Managers",
+    "Helpers",
+    "Utils",
+    "Common"
+  ],
+  "modules": [
+    {
+      "id": "planning",
+      "root": "src/Modules/Planning",
+      "featureRoot": "src/Modules/Planning/Features",
+      "featureAreas": [
+        "Plan",
+        "Environment",
+        "Run"
+      ]
+    }
+  ],
+  "hosts": [
+    {
+      "id": "cli",
+      "root": "src/Hosts/Cli",
+      "allowedSourcePatterns": [
+        "Program.cs",
+        "Progress/*.cs"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "path": "src/Modules/Planning/Conclave.Planning.csproj",
+      "name": "Conclave.Planning",
+      "owner": {
+        "kind": "module",
+        "id": "planning"
+      },
+      "role": "application"
+    },
+    {
+      "path": "src/Modules/Planning/Infrastructure/Conclave.Planning.Infrastructure.csproj",
+      "name": "Conclave.Planning.Infrastructure",
+      "owner": {
+        "kind": "module",
+        "id": "planning"
+      },
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/Hosts/Cli/Conclave.Cli.csproj",
+      "name": "conclave",
+      "owner": {
+        "kind": "host",
+        "id": "cli"
+      },
+      "role": "host"
+    }
+  ],
+  "allowedProjectDependencies": [
+    {
+      "from": "src/Modules/Planning/Infrastructure/Conclave.Planning.Infrastructure.csproj",
+      "to": "src/Modules/Planning/Conclave.Planning.csproj"
+    },
+    {
+      "from": "src/Hosts/Cli/Conclave.Cli.csproj",
+      "to": "src/Modules/Planning/Conclave.Planning.csproj"
+    },
+    {
+      "from": "src/Hosts/Cli/Conclave.Cli.csproj",
+      "to": "src/Modules/Planning/Infrastructure/Conclave.Planning.Infrastructure.csproj"
+    }
+  ]
+}

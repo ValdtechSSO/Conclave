@@ -1,133 +1,150 @@
-# Arquitectura de repositorio para agentes de programación
+# Manifiesto de arquitectura de repositorio para agentes de programación
 
-## Estructura de carpetas de referencia — versión 2
+## Protocolo de inicialización, evolución y conformidad — versión 2 revisada
 
-> **Vigencia en este repositorio:** este documento es la propuesta de diseño
-> que originó la migración. Las decisiones implementadas bajo `architecture/`,
-> `domain/`, los contratos de módulo y `AGENTS.md` son ahora autoritativas si
-> existe cualquier diferencia.
-
-> **Estado:** documento de trabajo  
-> **Objetivo principal:** cerrar una estructura de carpetas aplicable a un proyecto real, optimizada para humanos y agentes de programación.  
-> **Principio rector:** el modelo razona y propone; el repositorio, las herramientas y la CI localizan, validan, autorizan y generan evidencia.  
-> **Resultado esperado:** un árbol de proyecto predecible, navegable, verificable y adoptable de forma progresiva.
-
----
-
-# 1. Decisión principal
-
-El resultado de esta propuesta no es una nueva variante de Clean Architecture ni una plataforma multiagente. Es una **estructura de repositorio** que combina:
-
-1. una arquitectura modular del producto;
-2. vertical slices agrupadas por capacidades funcionales cohesivas;
-3. conocimiento arquitectónico y de dominio separado del código;
-4. contratos semánticos mantenidos por humanos;
-5. índices estructurales generados desde el código;
-6. recuperación progresiva de contexto;
-7. políticas, validaciones y evidencia deterministas;
-8. evaluaciones que permitan comprobar si la arquitectura realmente mejora el trabajo de los agentes.
-
-Nombre descriptivo de la arquitectura:
-
-> **Arquitectura modular por capacidades y vertical slices, con un plano de ingeniería para agentes, navegación determinista del repositorio y entrega basada en evidencia.**
-
-En inglés:
-
-> **Modular Vertical Slice Architecture with an Agent Engineering Plane, Deterministic Repository Navigation, and Evidence-First Delivery.**
-
-Para publicación conviene situarla dentro de **Agentic Software Engineering** y evitar presentar `AOSE` como un acrónimo nuevo, porque ya se utiliza históricamente para *Agent-Oriented Software Engineering* aplicada a sistemas multiagente.
+> **Estado:** normativo.
+>
+> **Ámbito:** este manifiesto define reglas portables para crear y hacer
+> evolucionar repositorios mediante agentes de programación. Cada proyecto debe
+> especializarlas mediante una política propia. Las excepciones requieren una
+> licencia explícita y nunca modifican silenciosamente las reglas generales.
+>
+> **Principio rector:** el agente razona y propone; el repositorio declara,
+> localiza, restringe, valida y conserva evidencia.
 
 ---
 
-# 2. Principios que determinan la estructura
+# 1. Propósito
 
-## 2.1 La estructura final es el producto principal
+Este manifiesto no prescribe un árbol exhaustivo que deba copiarse. Define un
+protocolo para producir la arquitectura mínima correcta con el conocimiento
+disponible y para hacerla crecer cuando aparezcan necesidades verificables.
 
-La documentación, las herramientas y los índices existen para sostener una estructura de carpetas que permita responder:
+El resultado buscado es un repositorio donde un agente pueda responder:
 
 ```text
-¿Dónde está esta funcionalidad?
-¿Qué reglas la gobiernan?
-¿Qué código la implementa?
-¿Qué datos utiliza?
-¿Qué otros componentes dependen de ella?
-¿Qué tests la verifican?
-¿Qué riesgo tiene cambiarla?
-¿Qué validaciones son obligatorias?
+¿Qué capacidad funcional posee esta petición?
+¿Dónde comienza el comportamiento relacionado?
+¿Qué reglas e invariantes lo gobiernan?
+¿Qué código, datos y contratos afecta?
+¿Qué dependencias están permitidas?
+¿Qué tests y validaciones son obligatorios?
 ¿Qué evidencia demuestra que el cambio está completo?
+¿Qué desviaciones están autorizadas y por qué?
 ```
 
-## 2.2 Organización por capacidad de negocio
+Nombre descriptivo:
 
-No organizar globalmente por tipos técnicos:
+> **Arquitectura modular por capacidades y vertical slices, con evolución
+> incremental, navegación determinista y entrega basada en evidencia.**
+
+El manifiesto pertenece al ámbito de *Agentic Software Engineering*. No define
+una arquitectura de sistemas multiagente ni introduce un nuevo significado para
+el acrónimo histórico AOSE.
+
+---
+
+# 2. Lenguaje normativo
+
+Los términos `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT` y `MAY` expresan el nivel
+de obligatoriedad:
+
+- `MUST` / `MUST NOT`: regla general obligatoria;
+- `SHOULD` / `SHOULD NOT`: recomendación que solo se omite con una razón
+  explícita;
+- `MAY`: posibilidad permitida, nunca estructura obligatoria.
+
+Una política de proyecto puede concretar una regla general. No puede debilitarla
+silenciosamente. Para desviarse debe registrar una licencia acotada.
+
+---
+
+# 3. Principios universales
+
+## 3.1 La arquitectura se basa en conocimiento actual
+
+> **Architectural decisions MUST be based on current requirements and observable
+> project evidence. An agent MUST NOT introduce modules, projects, abstractions,
+> shared components, or directory levels solely for anticipated future use.**
+
+Una necesidad futura incierta se registra como riesgo, supuesto o pregunta. No
+se convierte en estructura hasta que exista un consumidor o límite real.
 
 ```text
-Controllers/
-Services/
-Repositories/
-Dtos/
-Validators/
+Necesidad posible
+→ riesgo o pregunta documentada
+→ no se materializa todavía
 ```
 
-Organizar por módulos funcionales:
+## 3.2 Economía estructural
+
+> **Every module, project, directory, abstraction, and shared component MUST be
+> justified by current code or by an enforced boundary.**
+
+Por tanto:
+
+- no se crean carpetas vacías para completar una plantilla;
+- no se crea una carpeta por cada clase;
+- varias clases pequeñas y cohesivas pueden compartir archivo cuando se
+  localizan, cambian y revisan juntas;
+- una clase obtiene archivo propio cuando tiene responsabilidad, navegación o
+  evolución independiente;
+- un proyecto o assembly existe solo cuando impone un límite verificable de
+  dependencia, despliegue, ownership, lenguaje o runtime;
+- `Shared`, `Common`, `BuildingBlocks` y abstracciones comunes aparecen solo con
+  consumidores actuales y ownership explícito;
+- un árbol más grande no representa una arquitectura más madura.
+
+## 3.3 Organización por capacidad funcional
+
+Los módulos representan capacidades del producto:
 
 ```text
 Modules/
 ├── Competitions/
-├── Seasons/
-├── Teams/
 ├── Classification/
 ├── Payments/
 └── Identity/
 ```
 
-Esto reduce el espacio de búsqueda y mantiene próximas las piezas que cambian juntas.
+Categorías técnicas no son módulos funcionales:
 
-## 2.3 Vertical slice primero
+```text
+Git/
+Providers/
+Repositories/
+Validation/
+Services/
+```
 
-Todo nuevo comportamiento de aplicación nace dentro de la feature funcional que
-posee su vocabulario, estado y ciclo de vida:
+Esas responsabilidades permanecen dentro de la infraestructura del módulo que
+las utiliza, salvo que sean una plataforma realmente independiente con contrato,
+ownership y ciclo de vida propios.
+
+## 3.4 Vertical slice y cohesión de feature
+
+Todo comportamiento nuevo comienza en el módulo propietario y en el área
+funcional más pequeña que posea su vocabulario, estado y ciclo de vida:
 
 ```text
 src/Modules/{Module}/Features/{FeatureArea}/
 ```
 
-No existe una carpeta global o local `Application/Services` como destino predeterminado.
+> **A command, handler, endpoint, or use case MUST NOT automatically create a new
+> root feature directory.**
 
-Regla normativa:
-
-> **New application behavior MUST start inside the owning module and the
-> smallest cohesive feature area that owns its vocabulary, state, and lifecycle.
-> A command, handler, or use case MUST NOT automatically create a new root
-> feature directory.**
-
-Una feature raíz representa una capacidad funcional cohesiva dentro del módulo,
-no necesariamente un único comando, handler o caso de uso.
-
-Varias operaciones permanecen en la misma feature cuando:
+Varias operaciones permanecen en una feature cuando:
 
 - actúan sobre el mismo concepto o agregado;
 - comparten estado, almacenamiento o ciclo de vida;
 - están gobernadas por los mismos invariantes;
-- obligan a revisar sustancialmente el mismo contexto;
-- separarlas aumentaría la navegación sin establecer un límite real.
+- sus cambios exigen revisar sustancialmente el mismo contexto;
+- separarlas aumenta la navegación sin establecer un límite real.
 
-Una nueva feature raíz se crea únicamente cuando existe independencia actual y
-verificable, por ejemplo:
+Una feature raíz nueva requiere independencia observable, como vocabulario,
+ownership, invariantes, riesgo, dependencias o evolución propios.
 
-- vocabulario funcional propio;
-- invariantes o perfil de riesgo diferentes;
-- ownership independiente;
-- dependencias claramente distintas;
-- evolución y pruebas mayormente independientes;
-- un límite que puede comprobarse mediante reglas de arquitectura.
-
-La estructura interna también se crea bajo demanda. Varias operaciones pequeñas
-pueden compartir directamente la carpeta de feature. Una operación obtiene una
-subcarpeta propia cuando su implementación tiene suficiente contenido o evolución
-independiente. No se crea un nivel de carpetas por cada comando o clase.
-
-Ejemplo:
+Ejemplo válido:
 
 ```text
 Modules/Planning/Features/
@@ -143,481 +160,485 @@ Modules/Planning/Features/
     └── PruneRunService.cs
 ```
 
-`ShowRun` y `PruneRun` permanecen bajo `Run` porque operan sobre el mismo
-concepto, almacenamiento y ciclo de vida. Agrupaciones genéricas como
-`Operations`, `Services` o `Handlers` no sustituyen un nombre funcional.
+`ShowRun` y `PruneRun` permanecen juntas porque comparten el concepto y ciclo de
+vida de `Run`.
 
-El código solo se promociona fuera del slice cuando existe una razón mecánica y verificable.
+## 3.5 Clean Architecture es local, no una taxonomía global
 
-## 2.4 Clean Architecture local
-
-Clean Architecture puede aplicarse dentro de cada módulo, no como una jerarquía global para todo el sistema.
+Cuando aporta límites útiles, un módulo puede contener:
 
 ```text
-System
-└── Bounded Contexts / Modules
-    └── Features
-        └── Local boundaries
+Module
+├── Domain/
+├── Contracts/
+├── Features/
+└── Infrastructure/
 ```
 
-Los módulos contienen, cuando sea necesario:
+Estas carpetas son posibilidades, no placeholders. Un módulo sin reglas de
+dominio propias no crea `Domain/`. Un módulo sin adaptadores técnicos no crea
+`Infrastructure/`.
+
+## 3.6 Declaración y observación son distintas
+
+La arquitectura declarada expresa intención y ownership. La arquitectura
+observada se deriva del código, configuración y artefactos de build.
 
 ```text
-Domain/
-Contracts/
-Features/
-Infrastructure/
+Declarado                         Observado
+-----------------------------    --------------------------------
+propósito del módulo             proyectos y assemblies
+aliases funcionales              namespaces y símbolos
+ownership                        dependencias
+riesgo                           endpoints y handlers
+invariantes y ADR                acceso a datos y tests
 ```
 
-## 2.5 Economía estructural
+> **Architectural conformance MUST compare declared architecture with observed
+> architecture. Validating policy or contract syntax alone is not architectural
+> conformance.**
 
-La estructura se crea bajo demanda. Un árbol más grande no es más fiel a esta
-arquitectura por el mero hecho de reproducir todas las carpetas de referencia.
+## 3.7 Sin evidencia no hay completitud
 
-Regla normativa:
-
-> **Every module, project, directory, abstraction, and shared component MUST be
-> justified by current code or by an enforced boundary. Hypothetical future use
-> is not sufficient.**
-
-Por tanto:
-
-- no se crean carpetas vacías para completar una plantilla;
-- varias clases pequeñas y cohesivas pueden compartir archivo cuando se localizan,
-  cambian y se revisan juntas;
-- una clase obtiene archivo propio cuando tiene responsabilidad, navegación o
-  evolución independiente, no por una regla mecánica;
-- un proyecto o assembly existe solo cuando impone un límite verificable de
-  dependencias, despliegue, ownership, lenguaje o runtime;
-- los módulos representan capacidades funcionales, nunca categorías técnicas
-  como `Git`, `Providers`, `Repositories` o `Validation`;
-- una capacidad no se divide en varios módulos hasta que las partes tengan
-  vocabulario, ownership, contratos o ciclo de vida realmente independientes;
-- `BuildingBlocks`, `Shared` y abstracciones comunes aparecen únicamente cuando
-  dos o más consumidores actuales justifican la promoción y el ownership queda
-  explícito.
-
-Las carpetas mostradas en los árboles canónicos son posibilidades permitidas,
-no una lista de placeholders obligatorios. La estructura mínima que explica y
-protege el sistema es preferible a una jerarquía exhaustiva sin contenido.
-
-## 2.6 Los contratos manuales no duplican el código
-
-Un contrato manual describe únicamente información no derivable con fiabilidad:
-
-- significado del módulo;
-- vocabulario e intenciones;
-- ownership como decisión arquitectónica;
-- riesgo predeterminado;
-- invariantes;
-- enlaces a ADRs;
-- límites conceptuales.
-
-No debe contener:
-
-- paths;
-- endpoints detectables;
-- handlers;
-- clases;
-- entidades utilizadas;
-- tablas observadas;
-- tests;
-- referencias.
-
-Esa información se genera desde el código.
-
-## 2.7 El contexto se recupera progresivamente
-
-El agente comienza con contexto mínimo y solicita más información conforme entiende el problema.
-
-No se le entrega por defecto un paquete grande y cerrado de archivos seleccionado antes de comenzar.
-
-```text
-Minimal bootstrap
-→ Locate
-→ Inspect
-→ Expand context
-→ Analyze impact
-→ Expand or prune
-→ Implement
-```
-
-## 2.8 Sin evidencia no hay completitud
-
-Una tarea no está completa porque el agente lo afirme.
-
-La completitud se deriva de:
-
-- revisión del estado del repositorio;
-- build;
-- tests;
-- análisis estático;
-- validaciones específicas del riesgo;
-- evidencia ligada al commit;
-- aprobación cuando corresponda.
-
-## 2.9 La propuesta debe ser falsable
-
-La estructura incluye datasets, graders y resultados de evaluación para comparar:
-
-```text
-Repositorio convencional
-vs.
-Contexto estático
-vs.
-Arquitectura adaptativa basada en índices, herramientas y evidencia
-```
+La afirmación de un agente nunca satisface por sí sola un quality gate. La
+completitud se deriva de build, tests, análisis estático, validaciones de riesgo,
+evidencia ligada a la revisión y aprobaciones necesarias.
 
 ---
 
-# 3. Árbol canónico del repositorio
+# 4. Capas de conformidad
 
-Leyenda:
+La conformidad arquitectónica separa tres capas.
 
-- **[M]** mantenido manualmente y autoritativo;
-- **[G]** generado desde código o configuración;
-- **[R]** estado de ejecución o artefacto de CI;
-- **[O]** opcional según el tipo de proyecto.
+## 4.1 Reglas generales del manifiesto
+
+Son portables entre proyectos. Deben tener identificadores estables:
+
+```text
+POL001  Project architecture policy is valid
+ARC001  Declared and observed architecture agree
+MOD001  Every module has a semantic contract
+MOD002  Module id matches its module root
+MOD003  Technical categories are not product modules
+FEAT001 Application behavior belongs to an owning feature area
+HOST001 Hosts do not own application behavior
+DEP001  Modules do not depend on hosts
+DEP002  Cross-module access uses public contracts
+DEP003  Observed project dependencies are authorized
+OWN001  Authoritative data has one owner
+STR001  Speculative structure is prohibited
+DOC001  Invariant and ADR references resolve
+WVR001  Waivers are explicit and valid
+```
+
+Las reglas generales pertenecen al catálogo ejecutable suministrado con el
+manifiesto, no a la implementación particular de un repositorio. Cada entrada
+declara su evaluador, entradas necesarias y si puede resolverse automáticamente.
+
+## 4.2 Política específica del proyecto
+
+Cada proyecto declara cómo materializa el manifiesto. Puede describir módulos,
+hosts, assemblies, límites, dependencias y reglas propias.
+
+La política cumple `architecture-policy.schema.json`. Ejemplo abreviado:
+
+```json
+{
+  "$schema": "../../contracts/schemas/architecture-policy.schema.json",
+  "version": 1,
+  "project": "acme",
+  "adapter": "dotnet",
+  "roots": {
+    "modules": "src/Modules",
+    "hosts": "src/Hosts"
+  },
+  "projectSearchRoots": ["src"],
+  "structureSearchRoots": ["src"],
+  "moduleContract": {
+    "fileName": "module.contract.yml",
+    "schema": ".agentic/contracts/schemas/module-contract.schema.json",
+    "forbiddenStructuralFields": ["paths", "handlers", "classes", "tests"]
+  },
+  "technicalModuleNames": ["Git", "Providers", "Validation"],
+  "forbiddenDirectoryNames": ["Services", "Helpers", "Common"],
+  "modules": [
+    {
+      "id": "orders",
+      "root": "src/Modules/Orders",
+      "featureRoot": "src/Modules/Orders/Features",
+      "featureAreas": ["OrderLifecycle"]
+    }
+  ],
+  "hosts": [
+    {
+      "id": "api",
+      "root": "src/Hosts/Api",
+      "allowedSourcePatterns": ["Program.cs", "Endpoints/*.cs"]
+    }
+  ],
+  "projects": [
+    {
+      "path": "src/Modules/Orders/Orders.csproj",
+      "name": "Acme.Orders",
+      "owner": { "kind": "module", "id": "orders" },
+      "role": "application"
+    },
+    {
+      "path": "src/Hosts/Api/Api.csproj",
+      "name": "Acme.Api",
+      "owner": { "kind": "host", "id": "api" },
+      "role": "host"
+    }
+  ],
+  "allowedProjectDependencies": [
+    {
+      "from": "src/Hosts/Api/Api.csproj",
+      "to": "src/Modules/Orders/Orders.csproj"
+    }
+  ]
+}
+```
+
+La política del proyecto puede contener información estructural porque su
+propósito es validar la materialización física. No debe duplicar hechos que el
+analizador pueda descubrir de forma fiable, salvo cuando expresen un límite
+deseado que deba compararse con lo observado.
+
+## 4.3 Licencias arquitectónicas
+
+Una licencia autoriza una desviación concreta sin modificar la regla general.
+
+```json
+{
+  "version": 1,
+  "waivers": [
+    {
+      "id": "ACME-ARCH-001",
+      "rule": "DEP002",
+      "scope": "src/Modules/Reporting/Features/LegacyImport",
+      "decision": "Temporarily allow direct access to Billing infrastructure.",
+      "reason": "The import has not yet migrated to Billing contracts.",
+      "risk": "Reporting remains coupled to an internal implementation.",
+      "authorizedBy": [
+        "architecture/decisions/ADR-021-legacy-import-migration.md"
+      ],
+      "expiresOn": "2026-12-31",
+      "reviewWhen": [
+        "Billing publishes the required import contract",
+        "the legacy import is modified"
+      ]
+    }
+  ]
+}
+```
+
+Cada licencia `MUST` incluir:
+
+- regla afectada;
+- scope exacto;
+- decisión y motivo;
+- ADR o autoridad que la aprueba;
+- riesgo o compensación relevante;
+- condición de revisión o caducidad cuando sea aplicable.
+
+Una licencia no convierte el resultado en un `PASS` silencioso. Los estados de
+conformidad son:
+
+```text
+PASS
+FAIL
+WAIVED
+NOT_APPLICABLE
+REVIEW_REQUIRED
+```
+
+## 4.4 Regla de separación
+
+> **Conformance MUST separate portable manifesto rules, project-specific policy,
+> and authorized waivers. A project waiver MUST NOT silently weaken or redefine
+> a general rule.**
+
+---
+
+# 5. Protocolo de inicialización de un proyecto
+
+Este protocolo se aplica cuando un agente recibe un repositorio vacío o un
+producto que todavía no tiene arquitectura establecida.
+
+## 5.1 Descubrimiento inicial
+
+El agente comienza con la información disponible:
+
+- objetivo y alcance actual del producto;
+- actores y operaciones conocidas;
+- datos y ownership conocidos;
+- interfaces externas requeridas;
+- restricciones de lenguaje, runtime y despliegue;
+- riesgos e invariantes conocidos;
+- comandos de build y test disponibles.
+
+La ausencia de información se registra como pregunta o supuesto. No se rellena
+con arquitectura inventada.
+
+## 5.2 Identificación de capacidades
+
+El agente agrupa comportamiento por vocabulario, ownership, reglas y ciclo de
+vida. Solo crea varios módulos cuando existen límites funcionales reales.
+
+Preguntas de decisión:
+
+```text
+¿Tiene vocabulario propio?
+¿Posee datos o estado?
+¿Tiene invariantes propios?
+¿Puede evolucionar de forma independiente?
+¿Necesita un contrato con otras capacidades?
+```
+
+Una respuesta negativa o desconocida favorece mantener el comportamiento en un
+módulo existente o comenzar con un solo módulo.
+
+## 5.3 Identificación de hosts
+
+Un host representa una forma de ejecutar o exponer el producto, por ejemplo:
+
+```text
+Hosts/
+├── Api/
+├── Cli/
+├── Worker/
+└── Mcp/
+```
+
+Solo se crea un host que el producto necesite actualmente. El host adapta entrada
+y salida, compone dependencias y delega. No posee comportamiento de aplicación.
+
+## 5.4 Identificación de límites compilables
+
+Un proyecto o assembly nuevo necesita al menos una razón actual:
+
+- impedir dependencias prohibidas;
+- separar despliegues;
+- separar runtime o lenguaje;
+- aislar ownership;
+- publicar un contrato independiente.
+
+“Podría crecer” no es una razón suficiente.
+
+## 5.5 Entregables mínimos
+
+El agente crea únicamente los artefactos aplicables:
 
 ```text
 repository/
-├── AGENTS.md                                      [M]
-├── README.md                                      [M]
-├── .gitignore                                     [M]
-│
-├── architecture/                                  [M]
-│   ├── README.md
+├── AGENTS.md
+├── architecture/
 │   ├── system-overview.md
-│   ├── principles.md
 │   ├── boundaries.md
-│   ├── data-ownership.md
-│   ├── quality-attributes.md
 │   └── decisions/
-│       ├── ADR-001-modular-architecture.md
-│       ├── ADR-002-feature-first-slices.md
-│       ├── ADR-003-agentic-repository.md
-│       └── ...
-│
-├── domain/                                        [M]
-│   ├── README.md
+├── domain/
 │   ├── glossary.md
 │   ├── global-invariants.md
 │   └── contexts/
-│       ├── competitions.md
-│       ├── seasons.md
-│       ├── teams.md
-│       ├── classification.md
-│       ├── payments.md
-│       └── identity.md
-│
-├── src/                                           [M]
-│   ├── BuildingBlocks/
+├── src/
 │   ├── Modules/
-│   │   ├── Competitions/
-│   │   │   ├── AGENTS.md
-│   │   │   ├── module.contract.yml
-│   │   │   ├── Domain/
-│   │   │   ├── Contracts/
-│   │   │   ├── Features/
-│   │   │   └── Infrastructure/
-│   │   ├── Classification/
-│   │   │   ├── AGENTS.md
-│   │   │   ├── module.contract.yml
-│   │   │   ├── Domain/
-│   │   │   ├── Contracts/
-│   │   │   ├── Features/
-│   │   │   └── Infrastructure/
-│   │   ├── Payments/
-│   │   └── Identity/
-│   └── Hosts/
-│       ├── Api/
-│       ├── Workers/                               [O]
-│       └── Mcp/                                   [O]
-│
-├── web/                                           [O]
-│   └── src/
-│       └── app/
-│           ├── shell/
-│           ├── core/
-│           ├── shared/
-│           └── modules/
-│               ├── competitions/
-│               ├── classification/
-│               ├── payments/
-│               └── identity/
-│
-├── tests/                                         [M]
-│   ├── Unit/
-│   ├── Integration/
-│   ├── Contract/
-│   ├── Architecture/
-│   ├── EndToEnd/
-│   ├── Performance/
-│   ├── Security/
-│   └── Agentic/
-│       ├── Navigation/
-│       ├── ContextRetrieval/
-│       ├── ImpactAnalysis/
-│       ├── Policy/
-│       └── Evidence/
-│
-├── docs/                                          [M/G]
-│   ├── development/
-│   ├── testing/
-│   ├── operations/
-│   ├── runbooks/
-│   └── api/                                       [G]
-│
-├── tools/                                         [M]
-│   ├── Agentic.Cli/
-│   ├── CodeIndexer/
-│   ├── ContextBroker/
-│   ├── ValidationRunner/
-│   ├── EvidenceCollector/
-│   └── scripts/
-│
-└── .agentic/                                      [M/G/R]
-    ├── README.md                                  [M]
-    ├── contracts/                                 [M]
-    │   ├── repository.contract.yml
-    │   └── schemas/
-    │       ├── module-contract.schema.json
-    │       ├── evidence.schema.json
-    │       └── task-state.schema.json
-    ├── agents/                                    [M]
-    ├── workflows/                                 [M]
-    ├── skills/                                    [M]
-    ├── prompts/                                   [M]
-    ├── policies/                                  [M]
-    │   ├── risk-levels.yml
-    │   ├── permissions.yml
-    │   ├── quality-gates.yml
-    │   └── state-transitions.yml
-    ├── memory/                                    [M]
-    │   ├── lessons/
-    │   ├── failures/
-    │   ├── patterns/
-    │   └── deprecated/
-    ├── templates/                                 [M]
-    │   ├── task-worksheet.md
-    │   ├── handoff.md
-    │   └── evidence.json
-    ├── evals/                                     [M/R]
-    │   ├── datasets/
-    │   ├── conditions/
-    │   ├── graders/
-    │   ├── baselines/
-    │   └── results/
-    ├── generated/                                 [G]
-    │   └── index/
-    │       ├── repository.json
-    │       ├── projects.json
-    │       ├── modules.json
-    │       ├── symbols.json
-    │       ├── references.json
-    │       ├── dependencies.json
-    │       ├── endpoints.json
-    │       ├── handlers.json
-    │       ├── entities.json
-    │       ├── data-access.json
-    │       ├── tests.json
-    │       └── documents.json
-    └── runtime/                                   [R]
-        ├── tasks/
-        ├── evidence/
-        ├── traces/
-        └── cache/
+│   │   └── {CurrentModule}/
+│   │       ├── AGENTS.md
+│   │       ├── module.contract.yml
+│   │       └── Features/
+│   └── Hosts/                         # solo si existe un host
+├── tests/
+│   └── Architecture/
+└── .agentic/
+    ├── contracts/
+    └── policies/
+        └── architecture/
 ```
+
+Las carpetas sin contenido o responsabilidad actual se omiten.
+
+## 5.6 Arquitectura inicial ejecutable
+
+La inicialización no termina al dibujar el árbol. El agente `MUST` crear
+validaciones para los límites que acaba de declarar.
+
+Como mínimo:
+
+- descubrir módulos y hosts;
+- validar contratos e identificadores;
+- comprobar dependencias permitidas;
+- impedir dependencias de módulos hacia hosts;
+- comprobar enlaces a invariantes y ADR;
+- comparar los límites declarados con proyectos y referencias observados;
+- producir resultados `PASS`, `FAIL`, `WAIVED`, `NOT_APPLICABLE` o
+  `REVIEW_REQUIRED`.
 
 ---
 
-# 4. Estructura interna de un módulo backend
+# 6. Protocolo de evolución
 
-Estructura canónica:
+Cada plan de implementación o petición de desarrollo ejecuta este protocolo.
+
+## 6.1 Localizar antes de crear
+
+El agente decide en este orden:
+
+1. ¿Qué módulo posee la petición?
+2. ¿Qué feature posee su concepto y ciclo de vida?
+3. ¿Es una operación dentro de esa feature?
+4. ¿La complejidad actual justifica una subcarpeta?
+5. ¿Existe lógica compartida real que deba promocionarse?
+6. ¿Ha aparecido una capacidad que justifique un módulo nuevo?
+7. ¿Hace falta un assembly para imponer un límite verificable?
+
+La respuesta predeterminada es extender el límite cohesivo existente, no crear
+estructura nueva.
+
+## 6.2 Regla de ubicación
+
+El comportamiento específico permanece en `Features/{FeatureArea}` cuando:
+
+- orquesta una operación de esa capacidad;
+- transforma entrada y salida;
+- contiene validaciones específicas;
+- coordina puertos para ese comportamiento;
+- no representa una regla autónoma de dominio.
+
+Se promociona a `Domain/` cuando representa una regla con significado propio,
+independiente de infraestructura y compartida por comportamiento actual.
+
+Se promociona a `Contracts/` cuando otros módulos o hosts necesitan consumirla
+como API pública.
+
+Se coloca en `Infrastructure/` cuando implementa acceso a filesystem, red,
+persistencia, procesos, mensajería, SDK o servicios externos.
+
+## 6.3 Crecimiento justificado
+
+### Nueva subcarpeta de operación
+
+Se crea cuando la operación tiene suficiente contenido, navegación o evolución
+independiente. No se crea por la mera existencia de un comando.
+
+### Nueva feature raíz
+
+Se crea cuando existe vocabulario, estado, invariantes, riesgo o ciclo de vida
+propios dentro del módulo.
+
+### Nuevo módulo
+
+Se crea cuando aparece una capacidad funcional con ownership y contratos
+independientes. Nunca para representar una categoría técnica.
+
+### Nuevo assembly
+
+Se crea cuando impone un límite real de dependencia, despliegue, runtime,
+lenguaje, distribución u ownership.
+
+### Componente compartido
+
+Se crea cuando existen al menos dos consumidores actuales, responsabilidad
+cohesiva y ownership explícito. La duplicación pequeña puede ser preferible a
+una abstracción prematura.
+
+## 6.4 Cambio arquitectónico atómico
+
+> **A change that modifies an architectural boundary is incomplete until the
+> declared architecture, observed structure, enforcement rules, and
+> documentation agree.**
+
+Un cambio de límite actualiza conjuntamente lo aplicable:
+
+- código y proyectos;
+- contrato semántico del módulo;
+- `AGENTS.md` local;
+- documentos de dominio;
+- ADR;
+- política específica del proyecto;
+- tests arquitectónicos;
+- índice estructural;
+- licencias;
+- evidencia del cambio.
+
+## 6.5 Autoridad de planes y peticiones
+
+Un plan de implementación es una entrada, no autoridad arquitectónica superior.
 
 ```text
-src/Modules/Classification/
+Petición o plan
+        ↓
+Reglas generales del manifiesto
+        ↓
+Política y licencias del proyecto
+        ↓
+Contratos, invariantes y ADR
+        ↓
+Implementación
+```
+
+Si un plan contradice una regla:
+
+1. el agente intenta una solución compatible;
+2. si la desviación es necesaria, propone un ADR y una licencia;
+3. si altera significativamente ownership, riesgo o producto, solicita decisión;
+4. nunca introduce la excepción silenciosamente.
+
+---
+
+# 7. Gramática estructural permitida
+
+Esta sección enumera ubicaciones posibles. No es un árbol obligatorio.
+
+```text
+repository/
 ├── AGENTS.md
-├── module.contract.yml
-├── Domain/
-│   ├── Models/
-│   ├── Rules/
-│   ├── Events/
-│   ├── ValueObjects/
-│   └── Services/                                  [excepcional]
-├── Contracts/
-│   ├── Commands/
-│   ├── Queries/
-│   ├── Events/
-│   └── PublicApi/
-├── Features/
-│   ├── Standings/
-│   │   ├── GetClassificationHandler.cs
-│   │   ├── RecalculateClassificationHandler.cs
-│   │   ├── Validator.cs
-│   │   └── Mapping.cs
-│   ├── Disqualification/
-│   │   ├── DisqualifyTeamHandler.cs
-│   │   └── Validator.cs
-│   └── Shared/                                    [excepcional]
-└── Infrastructure/
-    ├── Persistence/
-    ├── Queries/
-    ├── Messaging/
-    ├── ExternalServices/
-    └── DependencyInjection.cs
+├── architecture/                    # decisiones y límites mantenidos
+├── domain/                          # vocabulario e invariantes
+├── src/
+│   ├── Modules/                     # capacidades funcionales
+│   ├── Hosts/                       # formas actuales de ejecución
+│   └── BuildingBlocks/              # excepcional, con consumidores reales
+├── web/                             # si existe frontend independiente
+├── tests/
+├── docs/
+├── tools/
+└── .agentic/
 ```
 
-## 4.1 Regla de ubicación de la lógica
-
-### Permanece en `Features/{FeatureArea}` cuando
-
-- pertenece a una capacidad funcional cohesiva del módulo;
-- orquesta una operación concreta;
-- transforma request y response;
-- coordina repositorios o servicios para esa capacidad;
-- contiene validaciones específicas de la operación.
-
-### Se promociona a `Domain/` cuando
-
-- representa una regla de negocio con significado propio;
-- no depende de infraestructura;
-- la usan dos o más slices;
-- debe permanecer consistente entre varios casos de uso.
-
-### Se promociona a `Contracts/` cuando
-
-- otros módulos necesitan consumirla;
-- forma parte de la API pública del módulo;
-- es un comando, evento, query o DTO público.
-
-### Se ubica en `Infrastructure/` cuando
-
-- accede a persistencia;
-- llama a servicios externos;
-- publica o consume mensajes;
-- usa SDKs;
-- accede al filesystem;
-- implementa interfaces técnicas.
-
-### `Features/Shared/` solo se permite cuando
-
-- dos o más slices comparten la misma lógica de aplicación;
-- esa lógica no es una regla de dominio;
-- existe un test o regla que impide convertirlo en un cajón de sastre.
-
-## 4.2 Carpetas prohibidas por defecto
+Un módulo puede materializar solo las áreas necesarias:
 
 ```text
-Application/Services/
-Managers/
-Helpers/
-Common/Business/
-Utils/
+src/Modules/{Module}/
+├── AGENTS.md                         # obligatorio
+├── module.contract.yml               # obligatorio
+├── Domain/                           # opcional
+├── Contracts/                        # opcional
+├── Features/                         # cuando existe comportamiento
+└── Infrastructure/                   # cuando existen adaptadores técnicos
 ```
 
-Pueden existir únicamente con una decisión explícita y una responsabilidad acotada.
+Carpetas genéricas como `Managers`, `Helpers`, `Utils`, `Common` o
+`Application/Services` están prohibidas por defecto porque ocultan ownership.
+Solo una licencia con responsabilidad y scope acotados puede autorizarlas.
 
 ---
 
-# 5. Estructura interna del frontend
+# 8. Contrato semántico del módulo
 
-El frontend sigue la misma regla: módulo funcional y feature-first.
-
-```text
-web/src/app/modules/classification/
-├── AGENTS.md
-├── features/
-│   ├── view-classification/
-│   │   ├── classification-page.component.ts
-│   │   ├── classification-page.component.html
-│   │   ├── classification-page.component.spec.ts
-│   │   ├── classification.store.ts
-│   │   ├── classification.api.ts
-│   │   ├── classification.models.ts
-│   │   └── classification.routes.ts
-│   └── configure-tie-breaks/
-├── domain/                                        [compartido por 2+ features]
-├── data-access/                                   [compartido por 2+ features]
-├── ui/                                            [compartido por 2+ features]
-└── routes.ts
-```
-
-Regla:
-
-> La implementación comienza dentro de la feature. Solo se mueve a `domain`, `data-access` o `ui` cuando dos o más features necesitan compartirla.
-
-`core/` contiene capacidades globales de aplicación, como autenticación, configuración o interceptores.
-
-`shared/` contiene primitives visuales o técnicas realmente independientes del dominio. No debe contener lógica de negocio.
-
----
-
-# 6. `AGENTS.md`: router global y routers locales
-
-## 6.1 `AGENTS.md` de la raíz
-
-Debe ser breve y contener:
-
-- propósito del repositorio;
-- comandos autoritativos;
-- reglas críticas;
-- mapa de alto nivel;
-- workflow inicial;
-- herramientas disponibles;
-- operaciones prohibidas.
-
-No debe contener toda la arquitectura ni todo el dominio.
-
-## 6.2 `AGENTS.md` del módulo
-
-Debe contener únicamente orientación local:
-
-```markdown
-# Classification module
-
-## Purpose
-
-Calculates competition standings and tie-break rules.
-
-## Read before changing
-
-- `module.contract.yml`
-- `/domain/contexts/classification.md`
-- relevant ADRs returned by `agentic decisions find classification`
-
-## Commands
-
-- `agentic tests find --module classification`
-- `agentic validate targeted --module classification`
-
-## Critical rules
-
-- Teams without games must remain visible.
-- Disqualified teams are sorted last unless a configured rule overrides it.
-- Performance validation is required for query changes.
-```
-
-Los hechos estructurales, como endpoints o paths, no se copian aquí si pueden consultarse mediante el índice.
-
----
-
-# 7. Contratos semánticos del módulo
-
-Archivo:
+Cada módulo mantiene:
 
 ```text
 src/Modules/{Module}/module.contract.yml
 ```
 
-Ejemplo correcto:
+Ejemplo:
 
 ```yaml
 id: classification
 name: Classification
 
 purpose: >
-  Calculates competition standings, rankings and tie-break rules.
+  Calculates standings, rankings, and tie-break rules.
 
 intent:
   aliases:
@@ -625,9 +646,6 @@ intent:
     - standings
     - ranking
     - league table
-    - clasificación
-    - tabla de posiciones
-    - desempate
 
 ownership:
   domain: competition-classification
@@ -638,20 +656,25 @@ risk:
   default: high
   reasons:
     - Business-critical calculation
-    - Performance-sensitive queries
 
 invariants:
   - domain/contexts/classification.md#team-inclusion
-  - domain/contexts/classification.md#teams-without-games
   - domain/contexts/classification.md#disqualified-teams
 
 architecture_decisions:
   - architecture/decisions/ADR-014-classification-rules.md
 ```
 
-## 7.1 Campos prohibidos
+El contrato contiene semántica que no puede derivarse de forma fiable:
 
-El schema debe rechazar:
+- propósito;
+- vocabulario e intención;
+- ownership;
+- riesgo;
+- invariantes;
+- ADR aplicables.
+
+No contiene hechos estructurales derivables:
 
 ```yaml
 paths:
@@ -664,95 +687,41 @@ entities_written:
 routes:
 ```
 
-Esos datos pertenecen al índice generado.
+La conformidad del contrato incluye forma y significado:
 
-## 7.2 Verificación del contrato
-
-CI contrasta el contrato semántico con la arquitectura observada:
-
-```text
-Declared ownership
-        ↓
-Generated data-access graph
-        ↓
-Architecture policy
-        ↓
-Pass / Fail
-```
-
-Ejemplos:
-
-- si `Classification` declara propiedad sobre `ClassificationSnapshots`, otro módulo no puede escribir directamente esa tabla;
-- todos los enlaces a invariantes y ADRs deben existir;
-- el identificador del módulo debe coincidir con el módulo detectado;
-- los aliases no deben colisionar de forma no resuelta con otros módulos;
-- el índice debe corresponder al commit actual.
+- cumple su schema;
+- el `id` coincide con el módulo observado;
+- referencias a invariantes y ADR existen;
+- aliases no colisionan sin resolución;
+- ownership declarado coincide con acceso observado;
+- los datos autoritativos no reciben escrituras directas desde otro módulo.
 
 ---
 
-# 8. Índice estructural generado
+# 9. Arquitectura observada e índice generado
 
-Ubicación:
+La estructura real se deriva del repositorio mediante adaptadores de lenguaje y
+plataforma. Un índice puede residir en:
 
 ```text
 .agentic/generated/index/
+├── repository.json
+├── projects.json
+├── modules.json
+├── symbols.json
+├── references.json
+├── dependencies.json
+├── endpoints.json
+├── handlers.json
+├── entities.json
+├── data-access.json
+├── tests.json
+└── documents.json
 ```
 
-Es generado por `CodeIndexer` y nunca se edita manualmente.
+Solo se generan los índices relevantes para el proyecto.
 
-## 8.1 Información .NET
-
-Se extrae con Roslyn, OpenAPI, configuración EF y build metadata:
-
-- proyectos;
-- namespaces;
-- símbolos;
-- interfaces e implementaciones;
-- referencias;
-- endpoints;
-- handlers;
-- registros de DI;
-- entidades;
-- configuraciones EF;
-- tablas;
-- eventos;
-- producers y consumers;
-- dependencias entre módulos;
-- tests relacionados.
-
-## 8.2 Información Angular
-
-Se extrae mediante AST y configuración del framework:
-
-- routes;
-- components;
-- services;
-- stores y signals;
-- guards;
-- interceptors;
-- API clients;
-- imports;
-- dependencias entre features;
-- tests.
-
-## 8.3 Grafo de datos
-
-El índice debe permitir recorrer:
-
-```text
-Entity
-→ EF Configuration
-→ Table
-→ Migration
-→ Repository or Query
-→ Feature
-→ Endpoint
-→ Test
-```
-
-## 8.4 Frescura
-
-Cada índice debe contener:
+Cada índice registra al menos:
 
 ```json
 {
@@ -762,72 +731,194 @@ Cada índice debe contener:
 }
 ```
 
-Si el SHA no coincide con el código actual, las herramientas deben regenerarlo o declararlo obsoleto.
+Un índice cuya revisión no coincide con el código está obsoleto y no puede
+satisfacer validaciones.
+
+Los adaptadores tecnológicos pueden extraer:
+
+- proyectos, packages o assemblies;
+- namespaces, símbolos y referencias;
+- endpoints, handlers y registros de composición;
+- entidades, tablas y migraciones;
+- productores y consumidores de eventos;
+- dependencias entre módulos;
+- tests relacionados.
+
+La herramienta general evalúa un modelo arquitectónico común. Los adaptadores
+de .NET, Java, TypeScript, Python u otras plataformas construyen ese modelo sin
+convertir reglas tecnológicas particulares en reglas universales.
 
 ---
 
-# 9. Herramientas de navegación
+# 10. Validación arquitectónica
 
-La estructura se explota mediante una CLI reutilizada por humanos, CI y MCP.
-
-```bash
-agentic locate "where is classification calculated?"
-agentic symbol ClassificationCalculator
-agentic references ClassificationCalculator
-agentic tests find ClassificationCalculator
-agentic impact src/Modules/Classification/Domain/ClassificationCalculator.cs
-agentic data owner CompetitorsByPhases
-agentic decisions find "classification ordering"
-```
-
-Ejemplo de salida:
+## 10.1 Pipeline
 
 ```text
-Intent: Calculate competition classification
-Confidence: High
-
-Semantic contract:
-  src/Modules/Classification/module.contract.yml
-
-Observed module root:
-  src/Modules/Classification
-
-Primary entry points:
-  GET /api/competitions/{competitionId}/classification
-
-Core symbols:
-  GetClassificationHandler
-  ClassificationCalculator
-
-Data access:
-  ClassificationRepository
-
-Domain rules:
-  domain/contexts/classification.md
-
-Relevant tests:
-  tests/Integration/Classification/GetClassificationTests.cs
-  tests/Performance/Classification/ClassificationQueryBenchmarks.cs
-
-Risk:
-  High
+Código y configuración
+        ↓
+Modelo arquitectónico observado
+        ↓
+Reglas generales + política del proyecto
+        ↓
+Comparación con contratos y ADR
+        ↓
+Aplicación visible de licencias
+        ↓
+PASS / FAIL / WAIVED / NOT_APPLICABLE / REVIEW_REQUIRED
 ```
 
-La salida diferencia siempre:
+## 10.2 Qué se valida automáticamente
 
-- lo declarado semánticamente;
-- lo observado en el código;
-- lo inferido por búsqueda.
+Cuando la plataforma lo permita:
+
+- módulos, hosts y contratos existen donde corresponde;
+- identificadores y referencias son válidos;
+- proyectos y dependencias respetan la política;
+- módulos no dependen de hosts;
+- hosts no contienen comportamiento de aplicación;
+- infraestructura no se filtra hacia dominio o aplicación;
+- acceso entre módulos atraviesa contratos públicos;
+- namespaces o packages corresponden con su ownership;
+- handlers y endpoints pertenecen a features;
+- tests reflejan módulos y features;
+- ownership de datos coincide con lecturas y escrituras observadas;
+- licencias tienen scope, autoridad y vigencia válidos;
+- el índice corresponde a la revisión actual.
+
+## 10.3 Qué requiere revisión
+
+Algunas decisiones son semánticas y no deben disfrazarse de comprobaciones
+deterministas:
+
+- si dos operaciones son realmente cohesivas;
+- si una nueva capacidad merece un módulo;
+- si una abstracción compensa su coste;
+- si un nombre funcional describe correctamente el ownership;
+- si una licencia sigue siendo razonable.
+
+El analizador puede producir evidencia y heurísticas, pero el resultado será
+`REVIEW_REQUIRED` cuando no pueda demostrar la regla.
+
+## 10.4 Implementación de referencia suministrada
+
+El manifiesto `MUST` distribuirse con un validador general versionado. Un agente
+no reimplementa sus reglas para cada repositorio:
+
+```text
+tools/architecture/
+├── rules.json                    # catálogo portable y estable
+├── validate.py                   # CLI y ensamblaje del pipeline
+├── validator/
+│   ├── engine.py                 # evaluación y aplicación de licencias
+│   ├── contracts.py              # contratos de entrada y salida
+│   └── adapters/
+│       └── dotnet.py             # observación tecnológica
+└── tests/                        # conformidad del propio validador
+```
+
+El proyecto suministra únicamente:
+
+```text
+.agentic/
+├── contracts/schemas/
+│   ├── architecture-policy.schema.json
+│   ├── architecture-waivers.schema.json
+│   └── architecture-result.schema.json
+└── policies/architecture/
+    ├── project-policy.json
+    └── waivers.json
+```
+
+El agente puede añadir un adaptador tecnológico ausente o una comprobación
+específica del proyecto. No puede redefinir silenciosamente el significado de
+una regla general. Una regla no demostrable produce `REVIEW_REQUIRED`.
+
+Comandos de referencia:
+
+```bash
+./tools/scripts/validate-architecture.sh
+./tools/scripts/validate-architecture.sh --format json
+./tools/scripts/validate-architecture.sh --fail-on-review
+./tools/scripts/validate-architecture.sh --list-rules
+```
+
+`FAIL` devuelve código 1. Una entrada o configuración inválida devuelve código
+2. `REVIEW_REQUIRED` queda visible y puede convertirse en bloqueo mediante
+`--fail-on-review`.
+
+## 10.5 Tests generales y específicos
+
+La validación se divide físicamente:
+
+```text
+tools/architecture/tests/             # reglas y motor portables
+tests/Architecture/                   # decisiones específicas del proyecto
+```
+
+El validador de referencia se prueba, como mínimo, contra:
+
+- una arquitectura conforme;
+- una dependencia no autorizada;
+- una referencia documental rota;
+- una licencia válida, visible y acotada;
+- contratos o configuraciones inválidos.
+
+Los tests específicos del proyecto amplían el catálogo cuando una regla depende
+de semántica de dominio o tecnología que el modelo común no puede observar.
 
 ---
 
-# 10. Context Broker progresivo
+# 11. `AGENTS.md` como router
 
-La carpeta y tooling no deben preseleccionar un paquete cerrado de código al inicio.
+## 11.1 Router raíz
 
-## 10.1 Contexto inicial
+El `AGENTS.md` raíz es breve y contiene:
 
-El agente recibe:
+- propósito del repositorio;
+- comandos autoritativos;
+- reglas críticas;
+- mapa de módulos y hosts;
+- workflow inicial;
+- operaciones prohibidas.
+
+No contiene toda la arquitectura ni todo el dominio.
+
+## 11.2 Router de módulo
+
+Cada módulo mantiene orientación local:
+
+```markdown
+# Classification module
+
+## Purpose
+
+Calculates competition standings and tie-break rules.
+
+## Read before changing
+
+- `module.contract.yml`
+- `/domain/contexts/classification.md`
+- relevant ADRs
+
+## Commands
+
+- targeted module tests
+- architecture validation
+
+## Critical rules
+
+- Teams without games remain visible.
+- Performance validation is required for query changes.
+```
+
+Los hechos estructurales que puedan derivarse del código no se duplican aquí.
+
+---
+
+# 12. Navegación y contexto progresivo
+
+El agente comienza con contexto mínimo:
 
 ```text
 Task
@@ -837,58 +928,64 @@ Risk and permission policies
 Available navigation tools
 ```
 
-## 10.2 Recuperación iterativa
-
-```bash
-agentic locate "teams without games missing from classification"
-agentic context suggest --intent "teams without games missing from classification"
-agentic context expand --module classification --include invariants,entrypoints,tests
-agentic impact src/Modules/Classification/Domain/ClassificationCalculator.cs
-agentic context expand --symbol ClassificationCalculator --include callers,data,decisions
-agentic context prune --task AG-142
-```
-
-## 10.3 Estado de recuperación
-
-Se registra en:
+Después localiza y expande:
 
 ```text
-.agentic/runtime/tasks/{task-id}/
-├── task.json
-├── worksheet.md
-├── context-log.jsonl
-├── decisions.md
-└── handoff.md
+Minimal bootstrap
+→ Locate module and feature
+→ Read contract, invariants, ADR, policy, and waivers
+→ Inspect observed entry points
+→ Expand through dependencies, data, and tests
+→ Analyze impact
+→ Implement
 ```
 
-`context-log.jsonl` registra:
+Herramientas recomendadas:
 
-- qué solicitó el agente;
-- qué resultados recibió;
-- procedencia;
-- revisión del índice;
-- cantidad de contexto;
-- motivo de expansión o descarte.
+```bash
+agentic locate "where is classification calculated?"
+agentic symbol ClassificationCalculator
+agentic references ClassificationCalculator
+agentic tests find ClassificationCalculator
+agentic impact src/Modules/Classification/Features/Standings/
+agentic data owner ClassificationSnapshots
+agentic decisions find "classification ordering"
+```
 
-No almacena chain-of-thought privada.
+La salida distingue siempre:
+
+- semántica declarada;
+- estructura observada;
+- inferencias o heurísticas;
+- nivel de confianza;
+- revisión del índice utilizada.
+
+El registro de contexto conserva procedencia y motivos, nunca chain-of-thought
+privada.
 
 ---
 
-# 11. Control and Evidence Plane
+# 13. Control y evidencia
 
-Este plano es el núcleo operativo de la estructura.
-
-## 11.1 Carpetas
+Las políticas pueden residir en:
 
 ```text
 .agentic/policies/
+├── architecture/
+│   ├── project-policy.json
+│   └── waivers.json
 ├── risk-levels.yml
 ├── permissions.yml
 ├── quality-gates.yml
 └── state-transitions.yml
+```
 
-.agentic/runtime/evidence/{task-id}/{commit-sha}/
+La evidencia de una tarea se liga a una revisión:
+
+```text
+.agentic/runtime/evidence/{task-id}/{revision}/
 ├── manifest.json
+├── architecture.json
 ├── build.json
 ├── tests.json
 ├── security.json
@@ -897,86 +994,49 @@ Este plano es el núcleo operativo de la estructura.
 └── unresolved-risks.json
 ```
 
-## 11.2 Máquina de estados
-
-```text
-Created
-  ↓
-Scoped
-  ↓
-Implemented
-  ↓
-TargetValidated
-  ↓
-FullyValidated
-  ↓
-EvidenceComplete
-  ↓
-Reviewed
-  ↓
-MergeReady
-```
-
-El agente propone una transición. El policy engine la acepta o rechaza.
-
-```text
-Agent proposes transition
-        ↓
-Policy engine checks requirements
-        ↓
-Evidence collector validates artifacts
-        ↓
-Transition accepted or rejected
-```
-
-## 11.3 Evidencia ligada al commit
+Ejemplo:
 
 ```json
 {
   "taskId": "AG-142",
   "revision": "73a9c45",
-  "check": "full-tests",
-  "tool": "dotnet",
-  "toolVersion": "10.0.1",
-  "command": "dotnet test --no-build",
+  "check": "architecture",
+  "tool": "agentic",
+  "command": "./tools/scripts/validate-architecture.sh --format json",
   "exitCode": 0,
-  "passed": 342,
-  "failed": 0,
-  "skipped": 2,
-  "artifact": "ci://runs/9182/tests"
+  "result": "PASS"
 }
 ```
 
-Si cambia el commit, la evidencia anterior no puede satisfacer el gate del nuevo commit.
+Si cambia la revisión, la evidencia anterior deja de satisfacer el gate.
 
-## 11.4 Evidencia negativa
+También se registra evidencia negativa:
 
-También se registra:
-
-- checks no ejecutados;
-- motivo;
+- checks no ejecutados y motivo;
 - resultados inconclusos;
 - tests flaky;
-- limitaciones del entorno;
+- licencias utilizadas;
+- revisiones semánticas pendientes;
 - riesgos no resueltos.
 
-## 11.5 Clases de evidencia
+Clases de evidencia:
 
 | Clase | Ejemplos |
 |---|---|
-| Determinista | Build, test runner, schema validator |
-| Observacional | Benchmark, trace, métrica de producción |
-| Estática | Linter, SAST, dependency scan |
-| Probabilística | Revisión de otro agente o LLM |
-| Declarativa | Afirmación del agente |
+| Determinista | Build, tests, schema, dependencias |
+| Estática | Linter, SAST, análisis de ownership |
+| Observacional | Benchmark, trace, métricas |
+| Probabilística | Revisión de agente o LLM |
+| Declarativa | Afirmación sin prueba |
 
-Una afirmación declarativa nunca satisface por sí sola un quality gate.
+Una afirmación declarativa nunca satisface por sí sola un gate.
 
 ---
 
-# 12. Tests del producto y de la arquitectura para agentes
+# 14. Tests
 
-## 12.1 Tests del producto
+Los tests se organizan por tipo y después por módulo, feature o host cuando esa
+distinción aporte navegación:
 
 ```text
 tests/
@@ -984,480 +1044,209 @@ tests/
 ├── Integration/{Module}/{FeatureArea}/
 ├── Contract/{Module}/
 ├── Architecture/
-├── EndToEnd/
+├── EndToEnd/{Host}/
 ├── Performance/{Module}/
-└── Security/{Module}/
+├── Security/{Module}/
+└── Agentic/
 ```
 
-Los paths de tests reflejan los paths funcionales del producto.
+No se crean categorías vacías. Un proyecto pequeño puede mantener tests de
+varias features directamente bajo `Unit/{Module}` mientras sigan siendo fáciles
+de localizar.
 
-Ejemplo:
+Los tests arquitectónicos son producto, no documentación auxiliar. Protegen:
 
-```text
-src/Modules/Classification/Features/Standings/
-tests/Unit/Classification/Standings/
-tests/Integration/Classification/Standings/
-tests/Performance/Classification/Standings/
-```
-
-## 12.2 Tests de la infraestructura agentic
-
-```text
-tests/Agentic/
-├── Navigation/
-├── ContextRetrieval/
-├── ImpactAnalysis/
-├── Policy/
-└── Evidence/
-```
-
-Ejemplos:
-
-```text
-Given: "Where is classification calculated?"
-Expected:
-  module = Classification
-  core symbol includes ClassificationCalculator
-  domain document includes classification.md
-```
-
-```text
-Given: ClassificationCalculator.cs changed
-Expected:
-  classification tests selected
-  performance benchmark selected
-  risk = high
-```
-
-```text
-Given: agent requests production deployment
-Expected:
-  denied
-  human approval required
-```
+- reglas generales aplicables;
+- política específica;
+- límites entre módulos y hosts;
+- vigencia de licencias;
+- correspondencia entre declaración y observación.
 
 ---
 
-# 13. Evaluación falsable
+# 15. Estado arquitectónico acumulativo
 
-La estructura reserva:
-
-```text
-.agentic/evals/
-├── datasets/
-│   ├── laliguilla.yml
-│   ├── vyntrio.yml
-│   └── vitara-fitness.yml
-├── conditions/
-│   ├── baseline.yml
-│   ├── static-context.yml
-│   └── adaptive-repository.yml
-├── graders/
-├── baselines/
-└── results/
-```
-
-## 13.1 Condiciones
-
-### Baseline
+Después de cada cambio, el repositorio contiene lo necesario para que otro agente
+continúe sin conversaciones anteriores:
 
 ```text
-Repositorio convencional
-+ agente
-+ herramientas estándar
-```
-
-### Static Context
-
-```text
-Repositorio estructurado
+Manifiesto general
++ política del proyecto
++ contratos de módulos
 + AGENTS.md
-+ paquete inicial de contexto
++ dominio e invariantes
++ ADR
++ arquitectura observada
++ tests arquitectónicos
++ licencias
++ evidencia
+= estado arquitectónico actual
 ```
 
-### Adaptive Repository
+La memoria de una conversación no es fuente de verdad arquitectónica.
+
+---
+
+# 16. Adopción en un repositorio existente
+
+No se realiza una migración masiva únicamente para reproducir esta gramática.
+
+Orden recomendado:
+
+1. inventariar capacidades, hosts y dependencias actuales;
+2. declarar política y contratos sin falsear el estado observado;
+3. registrar deuda y licencias temporales;
+4. proteger primero los límites críticos;
+5. reorganizar al tocar cada área o cuando el beneficio justifique una migración;
+6. retirar licencias a medida que declaración y observación converjan.
+
+Una arquitectura parcialmente migrada debe informar su estado con `WAIVED` o
+`REVIEW_REQUIRED`, no presentarse como completamente conforme.
+
+---
+
+# 17. Contenido de `.agentic`
+
+Solo se materializan las áreas utilizadas:
 
 ```text
-Repositorio estructurado
-+ contratos semánticos
-+ índice generado
-+ Context Broker iterativo
-+ Evidence Gates
+.agentic/
+├── contracts/                # schemas de política, licencias y resultados
+├── policies/                 # arquitectura, riesgo, permisos y gates
+├── workflows/                # ciclos operativos reutilizables
+├── skills/                   # procedimientos especializados
+├── prompts/                  # prompts del proceso de ingeniería
+├── templates/                # worksheets, handoffs y evidencia
+├── generated/                # datos regenerables
+├── runtime/                  # estado y trazas
+└── evals/                    # experimentos y resultados
 ```
 
-## 13.2 Métricas
+Los prompts que forman parte del producto viven con la feature propietaria. Los
+prompts de ingeniería transversal viven bajo `.agentic/prompts`.
 
-Primarias:
+Se versionan normalmente:
+
+- arquitectura y dominio;
+- contratos y políticas;
+- ADR y licencias;
+- workflows, skills y templates;
+- schemas, datasets, graders y tooling.
+
+Los índices pueden versionarse o regenerarse según su coste. El estado de runtime,
+cachés, trazas y resultados voluminosos se conserva normalmente como artefacto
+de CI u observabilidad.
+
+---
+
+# 18. Evaluación falsable
+
+La arquitectura se considera útil solo si mejora resultados medibles frente a
+un repositorio convencional.
+
+Condiciones recomendadas:
+
+```text
+Baseline
+  repositorio convencional + herramientas estándar
+
+Static Context
+  estructura + AGENTS.md + contexto inicial fijo
+
+Adaptive Repository
+  contratos + índice + navegación progresiva + evidence gates
+```
+
+Métricas:
 
 - acceptance tests superados;
-- merge blockers;
-- defectos introducidos;
-- falsas declaraciones de completitud;
-- violaciones de scope.
-
-Navegación:
-
+- defectos y merge blockers;
+- violaciones de scope o módulo;
 - tiempo hasta el primer archivo relevante;
-- precision y recall de localización;
-- recall de selección de tests;
-- wrong-module rate;
-- precisión del análisis de impacto.
-
-Eficiencia:
-
-- tokens;
-- tool calls;
-- coste;
-- duración;
+- precisión de localización y selección de tests;
+- precisión del análisis de impacto;
+- falsas declaraciones de completitud;
+- tokens, tool calls, coste y duración;
 - contexto relevante frente a contexto total.
 
-La estructura se considera útil solo si mejora resultados medibles frente al baseline.
+La búsqueda semántica, MCP y colaboración multiagente son extensiones opcionales.
+Se incorporan solo cuando la evaluación demuestra una mejora sobre mecanismos
+más simples.
 
 ---
 
-# 14. Matriz de fuentes de verdad
-
-| Información | Fuente de verdad | Mantenimiento |
-|---|---|---|
-| Propósito del módulo | `module.contract.yml` | Manual |
-| Aliases funcionales | `module.contract.yml` | Manual |
-| Ownership deseado | `module.contract.yml` + ADR | Manual |
-| Invariantes | `domain/` + tests | Manual y ejecutable |
-| Paths reales | índice generado | Automático |
-| Endpoints | código/OpenAPI/índice | Automático |
-| Handlers y símbolos | índice generado | Automático |
-| Datos leídos y escritos | análisis generado | Automático |
-| Tests relacionados | índice generado | Automático |
-| Dependencias | índice generado + architecture tests | Automático |
-| Riesgo | policy + contrato semántico | Manual |
-| Validaciones requeridas | `quality-gates.yml` | Manual |
-| Resultado de validaciones | evidence manifest | Automático |
-| Estado de tarea | policy engine | Automático |
-| Lecciones y fallos | `.agentic/memory/` | Curado |
-
----
-
-# 15. Reglas de CI sobre la estructura
-
-CI debe validar:
-
-1. todos los `module.contract.yml` cumplen el schema;
-2. no contienen campos estructurales prohibidos;
-3. los enlaces a invariantes y ADRs existen;
-4. el índice fue generado para el commit actual;
-5. ownership declarado coincide con las políticas de acceso observadas;
-6. no existen dependencias prohibidas entre módulos;
-7. nuevos handlers están dentro de `Features/{FeatureArea}` y no directamente en
-   `Features/`; una feature raíz nueva requiere una capacidad funcional justificable;
-8. endpoints no acceden directamente a Infrastructure;
-9. `BuildingBlocks` no contiene lógica de negocio;
-10. `shared`, `common`, `helpers` y `services` no crecen sin una excepción aprobada;
-11. los tests requeridos por el impacto detectado fueron ejecutados;
-12. el estado `MergeReady` solo se alcanza con evidencia completa.
-
----
-
-# 16. Contenido de `.agentic`
-
-## `agents/`
-
-Configuraciones o responsabilidades de agentes especializados opcionales. No obliga a usar multiagente.
-
-## `workflows/`
-
-Ciclos completos:
+# 19. Flujo operativo completo
 
 ```text
-feature.md
-bug-fix.md
-database-migration.md
-performance-change.md
-security-change.md
-incident.md
-```
-
-## `skills/`
-
-Procedimientos especializados y reutilizables:
-
-```text
-create-backend-feature/
-create-angular-feature/
-database-migration/
-query-optimization/
-review-pull-request/
-```
-
-## `prompts/`
-
-Prompts versionados con schema, ejemplos y tests. Solo se almacenan aquí los prompts del proceso de ingeniería. Los prompts que forman parte del producto viven dentro del módulo del producto.
-
-## `policies/`
-
-Control determinista de riesgo, permisos, quality gates y estados.
-
-## `memory/`
-
-Conocimiento operacional curado:
-
-```text
-lessons/
-failures/
-patterns/
-deprecated/
-```
-
-No almacena conversaciones completas.
-
-## `templates/`
-
-Plantillas de worksheet, handoff y evidencia.
-
-## `evals/`
-
-Protocolo experimental y resultados.
-
-## `generated/`
-
-Todo lo derivado automáticamente. Puede regenerarse y nunca es fuente semántica primaria.
-
-## `runtime/`
-
-Estado de tareas, evidencia, trazas y caché. Parte de este contenido puede mantenerse fuera de Git y almacenarse como artefacto de CI.
-
----
-
-# 17. Política de versionado y Git
-
-## Se versiona
-
-- arquitectura;
-- dominio;
-- contratos semánticos;
-- workflows;
-- skills;
-- prompts;
-- políticas;
-- templates;
-- datasets y graders;
-- tooling;
-- schemas.
-
-## Puede versionarse o regenerarse
-
-- índices generados, según coste de generación y necesidades de revisión.
-
-Recomendación inicial: regenerarlos en CI y no tratarlos como fuente de verdad manual.
-
-## No se versiona normalmente
-
-```text
-.agentic/runtime/cache/
-.agentic/runtime/traces/
-.agentic/runtime/evidence/
-.agentic/evals/results/
-```
-
-Pueden almacenarse como artefactos de CI o en un sistema de observabilidad.
-
-Los worksheets y handoffs pueden versionarse cuando representen decisiones o continuidad importante; no es obligatorio conservar cada ejecución trivial.
-
----
-
-# 18. Estructura mínima para comenzar
-
-No es necesario crear todo el árbol el primer día.
-
-MVP:
-
-```text
-repository/
-├── AGENTS.md
-├── architecture/
-│   ├── system-overview.md
-│   └── decisions/
-├── domain/
-│   ├── glossary.md
-│   ├── global-invariants.md
-│   └── contexts/
-├── src/
-│   └── Modules/
-│       └── {Module}/
-│           ├── AGENTS.md
-│           ├── module.contract.yml
-│           ├── Domain/
-│           ├── Contracts/
-│           ├── Features/
-│           └── Infrastructure/
-├── tests/
-│   ├── Unit/
-│   ├── Integration/
-│   └── Architecture/
-├── tools/
-│   └── Agentic.Cli/
-└── .agentic/
-    ├── workflows/
-    ├── skills/
-    ├── policies/
-    ├── templates/
-    ├── generated/index/
-    └── runtime/
-```
-
-Este árbol se materializa solo hasta el nivel necesario. Por ejemplo, un módulo
-sin reglas de dominio propias no crea `Domain/`, y un repositorio con un único
-módulo no crea `BuildingBlocks/` ni `Shared/` preventivamente.
-
----
-
-# 19. Implementación progresiva
-
-## Fase 1 — Estructura y contratos
-
-Crear:
-
-- árbol mínimo;
-- `AGENTS.md` raíz;
-- módulos funcionales;
-- `module.contract.yml` semánticos;
-- arquitectura y dominio esenciales.
-
-## Fase 2 — Reglas de ubicación
-
-Aplicar a código nuevo:
-
-```text
-src/Modules/{Module}/Features/{FeatureArea}/
-```
-
-No migrar masivamente todo el código existente. Reorganizar al tocar cada área.
-
-## Fase 3 — Índice generado
-
-Generar símbolos, dependencias, endpoints, acceso a datos y tests.
-
-## Fase 4 — Navegación
-
-Implementar:
-
-```bash
-agentic locate
-agentic symbol
-agentic references
-agentic tests find
-agentic impact
-```
-
-## Fase 5 — Context Broker
-
-Implementar recuperación iterativa y registro de procedencia.
-
-## Fase 6 — Control y evidencia
-
-Implementar máquina de estados, quality gates y manifests ligados al commit.
-
-## Fase 7 — Evals
-
-Ejecutar el experimento baseline/static/adaptive.
-
-## Fase 8 — MCP
-
-Exponer los mismos servicios de CLI mediante MCP.
-
-## Fase 9 — Búsqueda semántica
-
-Añadirla solo si los índices y búsqueda lexical no alcanzan el recall necesario.
-
-## Fase 10 — Multiagente
-
-Añadir especialistas únicamente cuando los experimentos demuestren una mejora.
-
----
-
-# 20. Flujo resultante
-
-```text
-Human Task
-    ↓
-Minimal Bootstrap Context
-    ↓
-AGENTS.md Router
-    ↓
-Progressive Context Broker
-    ├── Semantic module contracts
-    ├── Generated code index
-    ├── Symbol and lexical search
-    ├── Dependency and data analysis
-    └── Optional semantic fallback
-    ↓
-Feature-First Product Architecture
-    ├── Domain
-    ├── Contracts
-    ├── Features
-    └── Infrastructure
-    ↓
-Agent Implementation
-    ↓
-Deterministic Control Plane
-    ├── Risk policy
-    ├── Permission gates
-    ├── State machine
-    └── Validation runner
-    ↓
-Evidence Plane
-    ├── Build
-    ├── Tests
-    ├── Security
-    ├── Performance
-    ├── Review
-    └── Unresolved risks
-    ↓
-Human or policy approval
-    ↓
-Merge readiness
+Petición
+  ↓
+Bootstrap mínimo
+  ↓
+Localizar módulo y feature propietarios
+  ↓
+Leer contrato, invariantes, ADR, política y licencias
+  ↓
+Comparar arquitectura declarada y observada
+  ↓
+Extender el límite existente o justificar uno nuevo
+  ↓
+Implementar
+  ↓
+Actualizar declaración y enforcement si cambió un límite
+  ↓
+Ejecutar validaciones de riesgo
+  ↓
+Conservar evidencia ligada a la revisión
+  ↓
+PASS / FAIL / WAIVED / REVIEW_REQUIRED
+  ↓
+Entrega humana o automatizada según política
 ```
 
 ---
 
-# 21. Decisiones cerradas en esta versión
+# 20. Decisiones normativas cerradas
 
-1. El outcome principal es el árbol de carpetas del proyecto.
-2. El código se organiza por módulos funcionales y vertical slices.
-3. No existe `Application/Services` como ubicación predeterminada.
-4. La lógica nueva nace dentro de la feature.
-5. Una feature raíz representa una capacidad cohesiva, no automáticamente un
-   comando, handler o caso de uso; las operaciones que comparten concepto y ciclo
-   de vida permanecen juntas.
-6. La estructura interna de una feature se materializa solo cuando la complejidad
-   o evolución independiente la justifica.
-7. Los contratos manuales contienen solo semántica no derivable.
-8. Paths, endpoints, símbolos, acceso a datos y tests se generan.
-9. CI contrasta ownership declarado con arquitectura observada.
-10. `AGENTS.md` actúa como router, no como enciclopedia.
-11. El contexto se recupera iterativamente mediante un Context Broker.
-12. El contexto inicial es mínimo.
-13. El plano de control y evidencia es una parte de primer nivel de la estructura.
-14. La evidencia queda ligada al commit.
-15. Una declaración del agente no satisface un quality gate.
-16. La arquitectura contiene evaluaciones falsables.
-17. La búsqueda semántica es un fallback.
-18. Multiagente es opcional y debe justificarse con métricas.
-19. Para publicación se evita reclamar `AOSE` como un nuevo acrónimo.
+1. El manifiesto es un protocolo de decisión, no una plantilla exhaustiva.
+2. La arquitectura se crea con necesidades y evidencia actuales.
+3. El producto se organiza por capacidades funcionales y features cohesivas.
+4. Un comando o caso de uso no crea automáticamente una feature raíz.
+5. Los módulos técnicos están prohibidos salvo capacidad y ownership reales.
+6. La estructura se materializa bajo demanda; no existen placeholders obligatorios.
+7. Un assembly necesita un límite verificable.
+8. Lo compartido necesita consumidores actuales y ownership explícito.
+9. Los contratos manuales contienen semántica no derivable.
+10. La arquitectura declarada se compara con la observada.
+11. Las reglas generales, la política del proyecto y las licencias son capas
+    distintas.
+12. Las licencias son visibles, acotadas y revisables.
+13. Un cambio de límite actualiza código, declaración, enforcement y evidencia.
+14. Un plan de implementación no puede ignorar la arquitectura silenciosamente.
+15. `AGENTS.md` actúa como router, no como enciclopedia.
+16. El contexto se recupera progresivamente.
+17. La evidencia está ligada a la revisión.
+18. Una afirmación del agente no satisface un quality gate.
+19. La utilidad de la arquitectura debe ser falsable mediante evaluación.
+20. Herramientas complejas se añaden solo cuando demuestran valor.
 
 ---
 
-# 22. Criterio final de éxito
+# 21. Criterio final de éxito
 
-La estructura habrá cumplido su objetivo cuando un agente nuevo pueda:
+El manifiesto cumple su objetivo cuando un agente nuevo puede:
 
-1. recibir una tarea con un contexto inicial mínimo;
-2. localizar el módulo y la feature correctos;
-3. recuperar las reglas e invariantes relevantes;
-4. identificar código, datos, dependencias y tests afectados;
-5. implementar el cambio dentro de una ubicación predecible;
-6. ejecutar las validaciones exigidas por el riesgo;
-7. generar evidencia ligada al commit;
-8. detenerse correctamente si falta aprobación o evidencia;
-9. entregar el trabajo a otro agente o humano sin reconstruir la sesión completa.
+1. crear desde cero la arquitectura mínima justificable con lo que conoce;
+2. distinguir lo conocido, lo supuesto y lo pendiente;
+3. localizar ownership, módulo y feature para una petición posterior;
+4. hacer crecer el proyecto sin anticipar estructura innecesaria;
+5. reconocer cuándo un nuevo límite está realmente justificado;
+6. actualizar de forma atómica arquitectura declarada y observada;
+7. validar reglas generales, decisiones específicas y licencias;
+8. identificar código, datos, dependencias y tests afectados;
+9. producir evidencia ligada a la revisión;
+10. entregar el repositorio a otro agente sin depender de memoria conversacional.
 
-La estructura de carpetas no es una convención estética. Es el mecanismo que hace posible una navegación, ejecución y validación confiables para humanos y agentes.
+La estructura de carpetas es una consecuencia visible de este protocolo. La
+arquitectura real es el conjunto coherente de decisiones, ownership, código,
+validaciones y evidencia que permite al repositorio explicar y proteger su propio
+crecimiento.

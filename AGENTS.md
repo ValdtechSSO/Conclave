@@ -7,7 +7,7 @@ Conclave produces implementation plans by orchestrating independent model provid
 ## Start here
 
 - Read `architecture/system-overview.md` and `domain/global-invariants.md`.
-- Application behavior starts under `src/Modules/{Module}/Features/{UseCase}`.
+- Application behavior starts under `src/Modules/{Module}/Features/{FeatureArea}`.
 - Read the owning module's `module.contract.yml` and `AGENTS.md` before changing it.
 - Provider, Git, process, and filesystem details stay in the module's local infrastructure behind its ports.
 

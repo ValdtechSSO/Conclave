@@ -7,8 +7,10 @@ Status: accepted.
 The V1 implementation separated the repository into global technical projects
 for core contracts, orchestration, providers, Git, validation, and infrastructure.
 That enforced some compile-time dependencies, but made one functional change span
-many top-level locations and did not follow the repository manifesto's canonical
-`src/Modules/{Module}/Features/{UseCase}` navigation path.
+many top-level locations and treated technical responsibilities as independent
+architectural boundaries. It also encouraged mapping individual commands or use
+cases to root slices even when several operations belonged to one cohesive
+feature area.
 
 Conclave currently has one cohesive product capability: producing and managing
 evidence-backed planning runs. Provider execution, Git snapshots, validation,

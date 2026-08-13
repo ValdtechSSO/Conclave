@@ -2,7 +2,7 @@
 
 Conclave is a local .NET CLI with stable commands (`plan`, `show`, `doctor`, `prune`). The CLI host delegates application behavior to vertical slices in the `Planning` capability module. The module owns planning-run contracts and behavior; its local infrastructure owns provider adapters, Git snapshots and worktrees, processes, persistence, and configuration.
 
-Application behavior starts under `src/Modules/Planning/Features/{UseCase}`. `Conclave.Planning` does not depend on infrastructure or the host. `Conclave.Planning.Infrastructure` implements module ports, and `src/Hosts/Cli` is the composition root. Directories and assemblies exist only for current behavior or an enforced boundary; technical categories do not become product modules.
+Application behavior starts under `src/Modules/Planning/Features/{FeatureArea}`. A feature area groups operations with the same concept, state, invariants, and lifecycle; an individual command or use case does not automatically create a root feature. `Conclave.Planning` does not depend on infrastructure or the host. `Conclave.Planning.Infrastructure` implements module ports, and `src/Hosts/Cli` is the composition root. Directories and assemblies exist only for current behavior or an enforced boundary; technical categories do not become product modules.
 
 The JSON files under `src/Modules/Planning/Features/Plan/Schemas/` remain authoritative and are colocated with the planning feature that owns them. Provider adapters may derive an invocation-only representation for a provider's supported JSON Schema dialect (for example, Claude's draft-agnostic form or OpenAI's all-properties-required strict form), but validation always uses the unchanged authoritative schema.
 

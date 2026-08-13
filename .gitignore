@@ -12,3 +12,5 @@ TestResults/
 .packages/
 artifacts/
 .conclave.secrets.env
+__pycache__/
+*.pyc
