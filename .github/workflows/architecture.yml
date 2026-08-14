@@ -1,0 +1,55 @@
+name: Architecture
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Validate current architecture
+        run: ./tools/scripts/validate-architecture.sh --fail-on-review --task-id architecture
+
+      - name: Select comparison revision
+        id: base
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "revision=$PULL_REQUEST_BASE" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            echo "revision=$PUSH_BASE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate architecture policy change
+        if: steps.base.outputs.revision != '' && steps.base.outputs.revision != '0000000000000000000000000000000000000000'
+        shell: bash
+        env:
+          BASE_REVISION: ${{ steps.base.outputs.revision }}
+        run: |
+          if git cat-file -e "$BASE_REVISION:.agentic/policies/architecture/project-policy.json"; then
+            ./tools/scripts/validate-architecture.sh \
+              --base-ref "$BASE_REVISION" \
+              --fail-on-review \
+              --task-id architecture-change
+          else
+            echo "Base revision predates architecture policy; strict validation covers bootstrap."
+          fi

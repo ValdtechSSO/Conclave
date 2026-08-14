@@ -358,4 +358,4 @@ file and must not be copied into prompts or agent instructions.
 A ready-to-copy version is available at
 [`.agentic/templates/conclave-agent-instructions.md`](.agentic/templates/conclave-agent-instructions.md).
 
-See [the system overview](architecture/system-overview.md), [global invariants](domain/global-invariants.md), and [the original implementation plan](docs/implementation-plans/conclave-implementation-plan.md).
+See [the system overview](architecture/system-overview.md), [global invariants](domain/global-invariants.md), [architecture governance](docs/development/architecture-governance.md), and [the original implementation plan](docs/implementation-plans/conclave-implementation-plan.md).

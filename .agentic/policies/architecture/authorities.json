@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ValdtechSSO/AgenticArchitectureKit/v0.4.1/src/agentic_architecture_kit/data/schemas/architecture-authorities.schema.json",
+  "version": 1,
+  "enforcement": {
+    "provider": "github",
+    "mode": "solo-maintainer",
+    "codeOwnersFile": ".github/CODEOWNERS",
+    "protectedBranches": [
+      "main"
+    ],
+    "requirements": [
+      "pull-request",
+      "no-direct-push",
+      "required-status-checks"
+    ]
+  },
+  "authorities": [
+    {
+      "id": "conclave-maintainers",
+      "displayName": "Conclave maintainers",
+      "principals": [
+        "@valdtechsecurity"
+      ],
+      "protectedScopes": [
+        "."
+      ]
+    }
+  ]
+}

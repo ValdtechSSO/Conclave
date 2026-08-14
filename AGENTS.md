@@ -7,6 +7,8 @@ Conclave produces implementation plans by orchestrating independent model provid
 ## Start here
 
 - Read `architecture/system-overview.md` and `domain/global-invariants.md`.
+- Before the first write, load the preventive architecture context with
+  `uvx --from agentic-architecture-kit==0.4.1 aak core`.
 - Application behavior starts under `src/Modules/{Module}/Features/{FeatureArea}`.
 - Read the owning module's `module.contract.yml` and `AGENTS.md` before changing it.
 - Provider, Git, process, and filesystem details stay in the module's local infrastructure behind its ports.
@@ -17,6 +19,7 @@ Conclave produces implementation plans by orchestrating independent model provid
 - Test: `dotnet test Conclave.sln`
 - CLI: `dotnet run --project src/Hosts/Cli -- --help`
 - Architecture check: `./tools/scripts/validate-architecture.sh`
+- Architecture diagnosis: `uvx --from agentic-architecture-kit==0.4.1 aak explain <RULE_ID>`
 - Run all .NET build, test, and pack commands outside the filesystem sandbox;
   MSBuild and VSTest require local IPC that is unreliable inside it.
 
@@ -48,6 +51,8 @@ Conclave produces implementation plans by orchestrating independent model provid
   or delegate to a subagent.
 - Do not add empty template directories, speculative abstractions, technical
   modules, or assemblies without an enforced current boundary.
+- If a validator finding's normative reference cannot be resolved, treat that
+  as a validation failure rather than reasoning from memory about the rule.
 - Automated tests use fake providers and must never consume provider APIs. Any
   explicitly authorized live-provider smoke test uses only Codex
   `gpt-5.6-terra` and DeepSeek `deepseek-v4-flash`; never invoke Claude for a
