@@ -1,8 +1,9 @@
 {
-  "$schema": "../../contracts/schemas/architecture-policy.schema.json",
+  "$schema": "https://raw.githubusercontent.com/ValdtechSSO/AgenticArchitectureKit/v0.4.1/src/agentic_architecture_kit/data/schemas/architecture-policy.schema.json",
   "version": 1,
   "project": "conclave",
   "adapter": "dotnet",
+  "adapterConfig": {},
   "roots": {
     "modules": "src/Modules",
     "hosts": "src/Hosts"
@@ -15,7 +16,7 @@
   ],
   "moduleContract": {
     "fileName": "module.contract.yml",
-    "schema": ".agentic/contracts/schemas/module-contract.schema.json",
+    "schema": "package:module-contract.schema.json",
     "forbiddenStructuralFields": [
       "paths",
       "entrypoints",
@@ -106,5 +107,6 @@
       "from": "src/Hosts/Cli/Conclave.Cli.csproj",
       "to": "src/Modules/Planning/Infrastructure/Conclave.Planning.Infrastructure.csproj"
     }
-  ]
+  ],
+  "dependencyRules": []
 }

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ValdtechSSO/AgenticArchitectureKit/v0.4.1/src/agentic_architecture_kit/data/schemas/architecture-reviews.schema.json",
+  "version": 1,
+  "reviews": [
+    {
+      "id": "REVIEW-001",
+      "rule": "FEAT001",
+      "scope": "src/Modules/Planning/Features",
+      "subjectFingerprint": "1c7c9ced19367bc337b8df9123c973a74792b2873a2e96df171238c194c148d0",
+      "ruleDigest": "sha256:42975e7c9dea2d5f0758f37a76cc7439dfcffc9b2593e4f849448c15687834c0",
+      "decision": "Plan, Environment, and Run are cohesive application capabilities within the Planning module. ShowRun and PruneRun belong inside Run and do not justify independent feature roots.",
+      "authorityId": "conclave-maintainers",
+      "reviewedBy": [
+        "@valdtechsecurity"
+      ],
+      "approvalEvidence": "github-maintainer-attestation:https://github.com/ValdtechSSO/Conclave/pull/1#issuecomment-5291988632",
+      "authorizedBy": [
+        "architecture/decisions/ADR-001-compact-modular-architecture.md"
+      ],
+      "reviewedAtRevision": "6d68ad90a8b057916fe7f55e521caadb071b0985",
+      "reviewWhen": [
+        "The reviewed subject or its evidence changes."
+      ]
+    },
+    {
+      "id": "REVIEW-002",
+      "rule": "OWN001",
+      "scope": ".",
+      "subjectFingerprint": "9abf406c6f4504bdaddb7f71cedd816957ce434f563df1677f3b36eb590575cf",
+      "ruleDigest": "sha256:24ddb08bb595a6efe4bdcf4b89ce9ff079b119d0165beff3b829f1860c7f173c",
+      "decision": "ConclaveRunArtifacts has one authoritative owner, the Planning module. Persistence details remain behind Planning's infrastructure boundary.",
+      "authorityId": "conclave-maintainers",
+      "reviewedBy": [
+        "@valdtechsecurity"
+      ],
+      "approvalEvidence": "github-maintainer-attestation:https://github.com/ValdtechSSO/Conclave/pull/1#issuecomment-5291988632",
+      "authorizedBy": [
+        "architecture/decisions/ADR-001-compact-modular-architecture.md"
+      ],
+      "reviewedAtRevision": "6d68ad90a8b057916fe7f55e521caadb071b0985",
+      "reviewWhen": [
+        "The reviewed subject or its evidence changes."
+      ]
+    }
+  ]
+}
